@@ -67,6 +67,6 @@ Important route families:
 - Do not commit secrets. Use `.env.azure.example` for deploy examples and keep `.env*`, `.dev.vars`, `dist/`, `target/`, `node_modules/`, `.wrangler/`, and `.tanstack/` ignored.
 - For backend fixes, run focused Maven tests where possible. For frontend fixes, prefer `npm run lint`, `npm run test`, or targeted inspection depending on risk.
 
-## Historical Plan
+## Historical Product Intent
 
-The earlier Skill Navigator rebuild plan is preserved in `.lovable/plan.md`. Treat it as product intent, but prefer the current codebase when it has advanced beyond that plan.
+Earlier Skill Navigator product intent is summarized in this file. Treat that history as context, but prefer the current codebase when it has advanced beyond the original plan.
