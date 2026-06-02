@@ -1,99 +1,271 @@
 # Azure VM Deployment — skillshifts.in
 
-For the full local build, test, Docker, AI sandbox, backup, and troubleshooting runbook, see:
+Complete runbook for deploying and maintaining Shiftora on an Azure Linux VM.
 
-```text
-BUILD_AND_DEPLOY.md
+---
+
+## Architecture
+
+```
+Internet → Nginx proxy (80 / 443)
+              ├── /api/*  →  Spring Boot API  (port 8081)
+              └── /*      →  Vite frontend    (port 8080)
+                               └── PostgreSQL 16  (port 5432, localhost only)
 ```
 
-This deployment runs the full stack on one Azure Linux VM with HTTPS via Let's Encrypt:
+All four services run as Docker containers managed by `docker-compose.azure-vm.yml`.  
+Data is persisted in a named Docker volume (`shiftora_postgres_data`) — it survives container restarts.
 
-- `proxy`: Nginx on ports 80 + 443 (HTTP redirect + SSL termination)
-- `web`: Built frontend served by Vite preview
-- `api`: Spring Boot backend
-- `postgres`: PostgreSQL 16 with a persistent Docker volume
-- `certbot`: Automatic certificate renewal every 12 hours
+---
 
-## Prerequisites on the VM
+## Prerequisites on the Azure VM
 
-- Docker Engine + Compose plugin installed
-- Inbound ports **80** and **443** open in the Azure Network Security Group
-- DNS A records for `skillshifts.in` and `www.skillshifts.in` pointing to the VM's public IP
-- This project folder copied to the VM
+| Requirement | Check |
+|---|---|
+| Ubuntu 22.04 LTS (or similar) | `lsb_release -a` |
+| Docker Engine + Compose plugin | `docker compose version` |
+| Inbound NSG rules: ports **80** and **443** | Azure Portal → VM → Networking |
+| DNS A record: `skillshifts.in` → VM public IP | `dig skillshifts.in` |
+| DNS A record: `www.skillshifts.in` → VM public IP | `dig www.skillshifts.in` |
 
-## 1. Create `.env.azure`
+Install Docker on Ubuntu if not already installed:
+```bash
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER   # log out and back in after this
+```
+
+---
+
+## First-time Deployment
+
+### Step 1 — Clone the repo onto the VM
+
+```bash
+git clone https://github.com/<your-org>/Shiftora.git
+cd Shiftora
+```
+
+### Step 2 — Create `.env.azure`
 
 ```bash
 cp .env.azure.example .env.azure
+nano .env.azure
 ```
 
-Edit `.env.azure` and set:
+Set these values (the rest can stay as defaults):
 
 ```bash
-POSTGRES_PASSWORD=<strong-password>
+POSTGRES_PASSWORD=<strong-random-password>        # at least 20 chars
 PUBLIC_APP_ORIGIN=https://skillshifts.in
-LETSENCRYPT_EMAIL=<your-email>
-ANTHROPIC_API_KEY=<claude-key>
+LETSENCRYPT_EMAIL=<your-email@example.com>
+ANTHROPIC_API_KEY=<your-claude-api-key>
+ANTHROPIC_MODEL=claude-sonnet-4-5
 ```
 
-Keep `.env.azure` private — it is gitignored.
+> `.env.azure` is gitignored — never commit it.
 
-## 2. Bootstrap SSL Certificate (first deploy only)
+### Step 3 — Bootstrap HTTPS (first deploy only)
 
-This step creates the Let's Encrypt certificate. Run it once before starting the full stack:
+Run once before starting the full stack:
 
 ```bash
 source .env.azure
 bash deploy/init-letsencrypt.sh
 ```
 
-The script will:
-1. Create a temporary self-signed cert so nginx can start
-2. Start the nginx proxy
+This will:
+1. Create a temporary self-signed cert so Nginx can start
+2. Start the Nginx proxy on port 80
 3. Request the real cert from Let's Encrypt via HTTP-01 challenge
-4. Reload nginx with the real cert
+4. Reload Nginx with the real certificate
 
-## 3. Start the Full Stack
+Skip this step for HTTP-only deployments (not recommended for production).
+
+### Step 4 — Build and start the full stack
 
 ```bash
 docker compose --env-file .env.azure -f docker-compose.azure-vm.yml up -d --build
 ```
 
-The app is available at:
+The build takes 3–5 minutes the first time (downloads Maven/Node base images and compiles).  
+Subsequent deployments are faster due to Docker layer caching.
 
-```text
-https://skillshifts.in
-```
-
-HTTP (`http://skillshifts.in`) automatically redirects to HTTPS.
-
-## 4. Populate Education Master Data
-
-After first deploy, populate the UDISE hierarchy (states, districts, blocks) from the KYS API.
-Log in as the platform admin and run:
+Check everything started:
 
 ```bash
+docker compose --env-file .env.azure -f docker-compose.azure-vm.yml ps
+```
+
+Expected output (all services `Up`):
+
+```
+NAME                          STATUS
+shiftora-...-postgres-1       Up (healthy)
+shiftora-...-api-1            Up
+shiftora-...-web-1            Up
+shiftora-...-proxy-1          Up
+```
+
+### Step 5 — Verify the API is running
+
+```bash
+curl -s http://localhost/api/health    # or https://skillshifts.in/api/health
+```
+
+Expected response: `{"status":"UP"}` (or similar — check API logs if different).
+
+---
+
+## Populate Master Data (one-time after first deploy)
+
+### 5a — UDISE hierarchy (states, districts, blocks)
+
+Sync ~36 states, ~779 districts, and ~7,006 blocks from the official UDISE+ API:
+
+```bash
+# Get a platform admin token
 TOKEN=$(curl -s -X POST https://skillshifts.in/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@example.com","password":"<password>"}' \
+  -d '{"email":"admin@skillshifts.in","password":"<platform-admin-password>"}' \
   | python3 -c "import sys,json; print(json.load(sys.stdin).get('token',''))")
 
+# Run the sync (pulls all states → districts → blocks in one call)
 curl -s -X POST "https://skillshifts.in/api/education/sync/kys?yearId=11" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-This pulls all 36 states, ~779 districts, and ~7,006 blocks from the official UDISE+ API.
+### 5b — TN School Master (45,530 government and aided schools)
 
-## 5. Check Status
+This loads all Tamil Nadu Government, Fully Aided, and Partially Aided schools from the flat file in the repo.
+
+**On your local machine**, copy the data file to the VM:
 
 ```bash
-docker compose --env-file .env.azure -f docker-compose.azure-vm.yml ps
-docker compose --env-file .env.azure -f docker-compose.azure-vm.yml logs -f api
+# Replace <vm-user> and <vm-ip> with your Azure VM's SSH user and public IP
+scp tn_govt_fully_aided_schools_udise.txt <vm-user>@<vm-ip>:~/Shiftora/
 ```
 
-## Certificate Renewal
+**On the VM**, run the loader script from the repo root:
 
-The `certbot` container automatically renews certificates every 12 hours. No manual action needed.
+```bash
+cd ~/Shiftora
+
+# Find the exact postgres container name
+docker ps --format '{{.Names}}' | grep postgres
+# Usually: shiftora-<project>-postgres-1
+
+# Run the loader (pass the container name as the argument)
+bash deploy/load-tn-schools.sh shiftora-<project>-postgres-1
+```
+
+The script:
+1. Copies the `.txt` file into the container at `/tmp/`
+2. Runs a PostgreSQL server-side `COPY` — loads all 45,530 rows in seconds
+3. Prints the final row count to confirm success
+
+Expected output:
+```
+Copying tn_govt_fully_aided_schools_udise.txt into shiftora-...-postgres-1...
+Running COPY into tn_school_master...
+COPY 45530
+Done. Row count:
+ loaded_schools
+----------------
+          45530
+(1 row)
+```
+
+> To reload (e.g., after a data update), truncate first:  
+> `docker exec <container> psql -U shiftora -d shiftora -c "TRUNCATE tn_school_master;"`  
+> Then re-run `bash deploy/load-tn-schools.sh`.
+
+---
+
+## Updating After a Code Change
+
+Pull the latest code and rebuild:
+
+```bash
+cd ~/Shiftora
+git pull origin main
+
+docker compose --env-file .env.azure -f docker-compose.azure-vm.yml up -d --build
+```
+
+Flyway runs automatically on API startup and applies any new migrations.  
+No need to manually run SQL files.
+
+To rebuild only one service (e.g., API only):
+
+```bash
+docker compose --env-file .env.azure -f docker-compose.azure-vm.yml up -d --build api
+```
+
+---
+
+## Operational Commands
+
+| Task | Command |
+|---|---|
+| View all service status | `docker compose --env-file .env.azure -f docker-compose.azure-vm.yml ps` |
+| Tail API logs | `docker compose --env-file .env.azure -f docker-compose.azure-vm.yml logs -f api` |
+| Tail all logs | `docker compose --env-file .env.azure -f docker-compose.azure-vm.yml logs -f` |
+| Restart API only | `docker compose --env-file .env.azure -f docker-compose.azure-vm.yml restart api` |
+| Stop all (keep data) | `docker compose --env-file .env.azure -f docker-compose.azure-vm.yml down` |
+| Stop + destroy DB volume | `docker compose --env-file .env.azure -f docker-compose.azure-vm.yml down -v` |
+
+---
+
+## Database Operations
+
+### Connect to Postgres directly
+
+```bash
+docker exec -it <postgres-container> psql -U shiftora -d shiftora
+```
+
+### Backup
+
+```bash
+docker compose --env-file .env.azure -f docker-compose.azure-vm.yml exec -T postgres \
+  pg_dump -U shiftora shiftora > shiftora-backup-$(date +%Y%m%d).sql
+```
+
+### Restore
+
+```bash
+docker compose --env-file .env.azure -f docker-compose.azure-vm.yml exec -T postgres \
+  psql -U shiftora shiftora < shiftora-backup-YYYYMMDD.sql
+```
+
+### Check migration status
+
+```bash
+docker exec <postgres-container> psql -U shiftora -d shiftora \
+  -c "SELECT version, description, installed_on FROM flyway_schema_history ORDER BY installed_rank;"
+```
+
+Current migrations (V1 → V22):
+
+| Version | Description |
+|---|---|
+| V1 | Core schema |
+| V2–V9 | Journey, learning, certificates, workshops |
+| V10–V11 | Education UDISE master |
+| V12 | Auth sessions |
+| V13 | Platform settings |
+| V15 | Registered school UDISE |
+| V16–V19 | India UDISE state/UT master + KYS seed data |
+| V20 | UDISE district + block master |
+| V21 | Seed platform admin user |
+| V22 | TN school master table (schema only — data loaded separately via COPY) |
+
+---
+
+## SSL Certificate
+
+Certbot renews the certificate automatically every 12 hours. No manual action needed.
+
 To force a renewal check:
 
 ```bash
@@ -101,44 +273,34 @@ docker compose --env-file .env.azure -f docker-compose.azure-vm.yml exec certbot
 docker compose --env-file .env.azure -f docker-compose.azure-vm.yml exec proxy nginx -s reload
 ```
 
-## Operational Commands
+---
 
-Rebuild after code changes:
+## Troubleshooting
+
+**API won't start / migration failed**
 
 ```bash
-docker compose --env-file .env.azure -f docker-compose.azure-vm.yml up -d --build
+docker compose --env-file .env.azure -f docker-compose.azure-vm.yml logs api | tail -50
 ```
 
-Restart only the backend after env changes:
+Look for `FlywayException` — usually means a migration was edited after being applied.  
+Fix: set `SPRING_FLYWAY_VALIDATE_ON_MIGRATE=false` in `.env.azure` (already the default).
+
+**Port 80 or 443 not reachable**
+
+Check NSG rules in the Azure Portal: VM → Networking → Inbound port rules.  
+Both 80 and 443 must be open to `0.0.0.0/0` (or your IP range).
+
+**UDISE decode returns school not found**
+
+The TN school master data may not be loaded. Run step 5b above.  
+Verify: `docker exec <postgres-container> psql -U shiftora -d shiftora -c "SELECT count(*) FROM tn_school_master;"`  
+Should return `45530`.
+
+**Out of disk space**
 
 ```bash
-docker compose --env-file .env.azure -f docker-compose.azure-vm.yml up -d --force-recreate api
-```
-
-Stop without deleting data:
-
-```bash
-docker compose --env-file .env.azure -f docker-compose.azure-vm.yml down
-```
-
-Stop and delete the Postgres volume (destroys all data):
-
-```bash
-docker compose --env-file .env.azure -f docker-compose.azure-vm.yml down -v
-```
-
-## Database Backup and Restore
-
-Backup:
-
-```bash
-docker compose --env-file .env.azure -f docker-compose.azure-vm.yml exec -T postgres \
-  pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" > shiftora-demo.sql
-```
-
-Restore:
-
-```bash
-docker compose --env-file .env.azure -f docker-compose.azure-vm.yml exec -T postgres \
-  psql -U "$POSTGRES_USER" "$POSTGRES_DB" < shiftora-demo.sql
+docker system prune -f          # remove unused images/containers/networks
+docker volume ls                # list volumes
+df -h                           # check disk usage
 ```

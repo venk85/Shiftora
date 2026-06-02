@@ -6,6 +6,7 @@ import com.shiftora.api.dto.TenantDto;
 import com.shiftora.api.repository.TenantRepository;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +40,7 @@ public class TenantService {
 
   @Transactional
   public TenantDto create(TenantDto dto) {
+    validateEduFields(dto);
     TenantEntity entity = mapper.toEntity(dto);
     TenantEntity saved = repository.save(entity);
     if (saved.getIndustry() == IndustryKey.edu) educationOverview.syncRegisteredSchool(saved);
@@ -47,11 +49,23 @@ public class TenantService {
 
   @Transactional
   public TenantDto update(String id, TenantDto dto) {
+    validateEduFields(dto);
     TenantEntity entity = repository.findById(id).orElseThrow(() -> notFound(id));
     mapper.updateEntity(entity, dto);
     TenantEntity saved = repository.save(entity);
     if (saved.getIndustry() == IndustryKey.edu) educationOverview.syncRegisteredSchool(saved);
     return mapper.toDto(saved);
+  }
+
+  private void validateEduFields(TenantDto dto) {
+    if (dto.industry() != IndustryKey.edu) return;
+    if (dto.board() == null || dto.board().isBlank())
+      throw new IllegalArgumentException("Board is required for education organizations.");
+    if (dto.udiseCode() != null && !dto.udiseCode().isBlank() && !dto.udiseCode().matches("\\d{11}"))
+      throw new IllegalArgumentException("UDISE code must be exactly 11 digits.");
+    Map<String, String> loc = dto.location();
+    if (loc == null || loc.getOrDefault("city", "").isBlank() || loc.getOrDefault("state", "").isBlank())
+      throw new IllegalArgumentException("City and state are required for education organizations.");
   }
 
   @Transactional

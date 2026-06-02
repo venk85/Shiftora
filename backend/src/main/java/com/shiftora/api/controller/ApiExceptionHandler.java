@@ -2,6 +2,7 @@ package com.shiftora.api.controller;
 
 import com.shiftora.api.service.NotFoundException;
 import com.shiftora.api.service.UnauthorizedException;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,7 +33,14 @@ public class ApiExceptionHandler {
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
-  ResponseEntity<Map<String, String>> validation(MethodArgumentNotValidException ex) {
-    return ResponseEntity.badRequest().body(Map.of("message", "Validation failed"));
+  ResponseEntity<Map<String, Object>> validation(MethodArgumentNotValidException ex) {
+    Map<String, String> fields = new LinkedHashMap<>();
+    ex.getBindingResult().getFieldErrors()
+        .forEach(err -> fields.putIfAbsent(err.getField(), err.getDefaultMessage()));
+    String summary = fields.isEmpty() ? "Validation failed" : "Validation failed: " + String.join(", ", fields.values());
+    Map<String, Object> body = new LinkedHashMap<>();
+    body.put("message", summary);
+    body.put("fields", fields);
+    return ResponseEntity.badRequest().body(body);
   }
 }

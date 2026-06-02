@@ -138,6 +138,9 @@ public class JourneyService {
     if (dto.email() == null || dto.email().isBlank()) {
       throw new IllegalArgumentException("email is required");
     }
+    if (!dto.email().trim().matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+      throw new IllegalArgumentException("Admin email format is invalid.");
+    }
     long now = Instant.now().toEpochMilli();
     AppUserEntity entity = dto.id() == null || dto.id().isBlank()
         ? users.findByTenantIdAndEmailIgnoreCase(dto.tenantId(), dto.email()).orElse(new AppUserEntity())
@@ -154,6 +157,7 @@ public class JourneyService {
     Map<String, Object> profile = new LinkedHashMap<>(dto.profile() == null ? Map.of("status", "invited") : dto.profile());
     Object rawPassword = profile.remove("password");
     if (rawPassword instanceof String password && !password.isBlank()) {
+      if (password.length() < 6) throw new IllegalArgumentException("Password must be at least 6 characters.");
       entity.setPasswordHash(passwordEncoder.encode(password));
       entity.setAuthVersion(entity.getAuthVersion() + 1);
     } else if (entity.getPasswordHash() == null || entity.getPasswordHash().isBlank()) {

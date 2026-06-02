@@ -8,7 +8,20 @@
       "Bash(grep \"'3301'\" /tmp/V20__udise_district_block_master.sql | head -3 *)",
       "Read(//private/tmp/**)",
       "Bash(awk -F'~~~' '{print $1}')",
-      "Bash(cp /tmp/V20__udise_district_block_master.sql \\\\ *)"
+      "Bash(cp /tmp/V20__udise_district_block_master.sql \\\\ *)",
+      "Bash(docker compose *)",
+      "Bash(docker rm *)",
+      "Bash(curl -s -H 'X-APP-SIGNATURE: 9f2c7a4b8e1d6c3f5a9b0e2d4f6a7c8b' 'https://kys.udiseplus.gov.in/web-app/api/schools?blockId=43396&yearId=11')",
+      "Bash(python3 -c ' *)",
+      "Bash(curl -sv -H 'X-APP-SIGNATURE: 9f2c7a4b8e1d6c3f5a9b0e2d4f6a7c8b' 'https://kys.udiseplus.gov.in/web-app/api/schools?blockId=43396&yearId=11')",
+      "Bash(curl -s -H 'X-APP-SIGNATURE: 9f2c7a4b8e1d6c3f5a9b0e2d4f6a7c8b' 'https://kys.udiseplus.gov.in/web-app/api/school?udiseCode=33320800101&yearId=11')",
+      "Bash(python3 -)",
+      "Bash(curl -s -X POST http://localhost:8081/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"admin@example.com\",\"password\":\"Shiftora@123\"}')",
+      "Bash(xargs ls -la)",
+      "Bash(python3 -m json.tool)",
+      "Bash(curl -s \"http://localhost:8090/api/education/udise/decode?code=33010100101\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8090/)",
+      "Bash(curl -s \"http://localhost:8081/api/education/udise/decode?code=33010100101\")"
     ],
     "additionalDirectories": [
       "/private/tmp"

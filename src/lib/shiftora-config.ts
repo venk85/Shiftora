@@ -50,6 +50,11 @@ export type EducationAssignment = {
   blockOfficerTitle?: string;
   blockOfficerOffice?: string;
   blockOfficerContact?: string | null;
+  // School-level fields — populated when UDISE code is found in TN school master
+  schoolName?: string | null;
+  schoolType?: string | null;
+  staffCount?: number | null;
+  boardName?: string | null;
 };
 
 export type Persona = {

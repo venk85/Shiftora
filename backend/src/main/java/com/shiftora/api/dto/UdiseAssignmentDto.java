@@ -16,5 +16,10 @@ public record UdiseAssignmentDto(
     String blockUnitName,
     String blockOfficerTitle,
     String blockOfficerOffice,
-    String blockOfficerContact
+    String blockOfficerContact,
+    // School-level fields — populated when the UDISE code is found in tn_school_master
+    String schoolName,
+    String schoolType,
+    Integer staffCount,
+    String boardName
 ) {}

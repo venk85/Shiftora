@@ -4,6 +4,7 @@ import com.shiftora.api.domain.EducationAssignmentReviewEntity;
 import com.shiftora.api.domain.EducationBlockEntity;
 import com.shiftora.api.domain.EducationStateEntity;
 import com.shiftora.api.domain.EducationalDistrictEntity;
+import com.shiftora.api.domain.TnSchoolMasterEntity;
 import com.shiftora.api.dto.EducationAssignmentReviewDto;
 import com.shiftora.api.dto.EducationBlockDto;
 import com.shiftora.api.dto.EducationStateDto;
@@ -13,6 +14,7 @@ import com.shiftora.api.repository.EducationAssignmentReviewRepository;
 import com.shiftora.api.repository.EducationBlockRepository;
 import com.shiftora.api.repository.EducationStateRepository;
 import com.shiftora.api.repository.EducationalDistrictRepository;
+import com.shiftora.api.repository.TnSchoolMasterRepository;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -37,16 +39,19 @@ public class EducationDirectoryService {
   private final EducationalDistrictRepository districts;
   private final EducationBlockRepository blocks;
   private final EducationAssignmentReviewRepository reviews;
+  private final TnSchoolMasterRepository schoolMaster;
 
   public EducationDirectoryService(
       EducationStateRepository states,
       EducationalDistrictRepository districts,
       EducationBlockRepository blocks,
-      EducationAssignmentReviewRepository reviews) {
+      EducationAssignmentReviewRepository reviews,
+      TnSchoolMasterRepository schoolMaster) {
     this.states = states;
     this.districts = districts;
     this.blocks = blocks;
     this.reviews = reviews;
+    this.schoolMaster = schoolMaster;
   }
 
   public List<EducationStateDto> states() {
@@ -80,9 +85,15 @@ public class EducationDirectoryService {
     if (block == null) {
       return review("Block not found in our records. Please select manually and notify your admin.", udiseCode, state, districtCode, blockCode);
     }
+    TnSchoolMasterEntity school = schoolMaster.findById(udiseCode).orElse(null);
+    String schoolName = school != null ? school.getSchoolName() : null;
+    String schoolType = school != null ? school.getSchoolType() : null;
+    Integer staffCount = school != null ? school.getTeachingStaff() : null;
+    String boardName = school != null ? inferBoard(school.getSchoolName(), state.getStateCode()) : null;
+    String message = school != null ? "School details loaded from UDISE master" : "UDISE decoded successfully";
     return new UdiseAssignmentDto(
         "ASSIGNED",
-        "UDISE decoded successfully",
+        message,
         udiseCode,
         state.getStateCode(),
         state.getStateName(),
@@ -96,7 +107,17 @@ public class EducationDirectoryService {
         state.getBlockUnitName(),
         state.getBlockOfficerTitle(),
         block.getBeoOfficeName(),
-        block.getBeoContact());
+        block.getBeoContact(),
+        schoolName,
+        schoolType,
+        staffCount,
+        boardName);
+  }
+
+  private String inferBoard(String schoolName, String stateCode) {
+    if (!"33".equals(stateCode)) return null;
+    if (schoolName != null && schoolName.toUpperCase().contains("MODEL SCHOOL")) return "CBSE";
+    return "Tamil Nadu State Board";
   }
 
   @Transactional
@@ -186,11 +207,15 @@ public class EducationDirectoryService {
         state.getBlockUnitName(),
         state.getBlockOfficerTitle(),
         "",
+        null,
+        null,
+        null,
+        null,
         null);
   }
 
   private UdiseAssignmentDto error(String message, String udiseCode, String stateCode, String districtCode, String blockCode) {
-    return new UdiseAssignmentDto("ERROR", message, udiseCode, stateCode, "", districtCode, "", "", "", null, blockCode, "", "", "", "", null);
+    return new UdiseAssignmentDto("ERROR", message, udiseCode, stateCode, "", districtCode, "", "", "", null, blockCode, "", "", "", "", null, null, null, null, null);
   }
 
   private EducationStateDto toDto(EducationStateEntity e) {

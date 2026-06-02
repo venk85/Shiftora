@@ -13,6 +13,7 @@ import com.shiftora.api.repository.EducationAssignmentReviewRepository;
 import com.shiftora.api.repository.EducationBlockRepository;
 import com.shiftora.api.repository.EducationStateRepository;
 import com.shiftora.api.repository.EducationalDistrictRepository;
+import com.shiftora.api.repository.TnSchoolMasterRepository;
 import com.shiftora.api.service.EducationDirectoryService;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -31,12 +32,13 @@ class EducationDirectoryServiceTest {
   @Mock private EducationalDistrictRepository districts;
   @Mock private EducationBlockRepository blocks;
   @Mock private EducationAssignmentReviewRepository reviews;
+  @Mock private TnSchoolMasterRepository schoolMaster;
 
   private EducationDirectoryService service;
 
   @BeforeEach
   void setUp() {
-    service = new EducationDirectoryService(states, districts, blocks, reviews);
+    service = new EducationDirectoryService(states, districts, blocks, reviews, schoolMaster);
   }
 
   @Test

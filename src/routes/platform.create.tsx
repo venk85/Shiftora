@@ -100,9 +100,15 @@ function Create() {
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
   const [saving, setSaving] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
   const selectedState = useMemo(() => educationStates.find((item) => item.stateCode === selectedStateCode), [educationStates, selectedStateCode]);
   const selectedDistrict = useMemo(() => educationDistricts.find((item) => item.udiseDistrictCode === selectedDistrictCode), [educationDistricts, selectedDistrictCode]);
   const selectedBlock = useMemo(() => educationBlocks.find((item) => item.udiseBlockCode === selectedBlockCode), [educationBlocks, selectedBlockCode]);
+
+  function clearError(key: string) {
+    setFieldErrors((prev) => { const n = { ...prev }; delete n[key]; return n; });
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -114,9 +120,7 @@ function Create() {
         setSelectedStateCode((current) => current || tamilNadu?.stateCode || rows[0]?.stateCode || "");
       })
       .catch(() => toast.error("Could not load education state masters."));
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -130,9 +134,7 @@ function Create() {
         setSelectedBlockCode("");
       })
       .catch(() => toast.error("Could not load educational districts."));
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [selectedStateCode]);
 
   useEffect(() => {
@@ -149,9 +151,7 @@ function Create() {
         setSelectedBlockCode(rows[0]?.udiseBlockCode || "");
       })
       .catch(() => toast.error("Could not load block masters."));
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [selectedDistrictCode]);
 
   function changeIndustry(next: IndustryKey) {
@@ -164,6 +164,7 @@ function Create() {
     setRoleLabels(nextDefaults.roles);
     setSubs((items) => items.map((item) => ({ ...item, leadRole: nextDefaults.leadRole })));
     if (next === "edu") setBoard("TN State Board");
+    setFieldErrors({});
   }
 
   async function decodeUdise() {
@@ -178,8 +179,22 @@ function Create() {
       if (assignment.stateCode) setSelectedStateCode(assignment.stateCode);
       if (assignment.udiseDistrictCode) setSelectedDistrictCode(assignment.udiseDistrictCode);
       if (assignment.udiseBlockCode) setSelectedBlockCode(assignment.udiseBlockCode);
-      if (assignment.stateName) setStateName(assignment.stateName);
-      if (assignment.districtName) setDistrict(assignment.districtName);
+      if (assignment.stateName) { setStateName(assignment.stateName); clearError("stateName"); }
+      if (assignment.districtName) { setDistrict(assignment.districtName); }
+      if (assignment.blockName) { setCity(assignment.blockName); clearError("city"); }
+      setCountry("India");
+      // Auto-fill org fields from school master if found
+      if (assignment.schoolName) {
+        setName(assignment.schoolName);
+        clearError("name");
+      }
+      if (assignment.schoolType) {
+        setType(assignment.schoolType);
+      }
+      if (assignment.boardName) {
+        setBoard(assignment.boardName);
+        clearError("board");
+      }
       toast[assignment.status === "ASSIGNED" ? "success" : "warning"](assignment.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not decode UDISE code.");
@@ -210,30 +225,38 @@ function Create() {
   }
 
   async function submit() {
-    if (!name.trim()) {
-      toast.error("Add an organisation name.");
+    const errors: Record<string, string> = {};
+
+    if (!name.trim()) errors.name = "Organisation name is required.";
+    if (!adminName.trim()) errors.adminName = "Admin name is required.";
+    if (!adminEmail.trim()) {
+      errors.adminEmail = "Admin email is required.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail.trim())) {
+      errors.adminEmail = "Enter a valid email address.";
+    }
+    if (!adminPassword.trim()) {
+      errors.adminPassword = "Password is required.";
+    } else if (adminPassword.trim().length < 6) {
+      errors.adminPassword = "Minimum 6 characters.";
+    }
+
+    if (industry === "edu") {
+      if (!board.trim()) errors.board = "Board is required.";
+      if (!addressLine1.trim()) errors.addressLine1 = "Address is required.";
+      if (!city.trim()) errors.city = "City / town is required.";
+      if (!stateName.trim()) errors.stateName = "State is required.";
+      if (!educationAssignment && (!selectedState || !selectedDistrict || !selectedBlock))
+        errors.udiseAssignment = "Decode UDISE or select state, district and block.";
+    } else {
+      if (!subs.some((s) => s.name.trim())) errors.units = "Add at least one unit.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      toast.error("Please fix the highlighted fields.");
       return;
     }
-    if (industry !== "edu" && !subs.some((s) => s.name.trim())) {
-      toast.error("Add at least one unit.");
-      return;
-    }
-    if (!adminName.trim() || !adminEmail.trim() || !adminPassword.trim()) {
-      toast.error("Add the first admin name, email and password.");
-      return;
-    }
-    if (industry === "edu" && (!board.trim() || !addressLine1.trim() || !city.trim() || !stateName.trim())) {
-      toast.error("Add the school board, address, city and state.");
-      return;
-    }
-    if (industry === "edu" && !educationAssignment && (!selectedState || !selectedDistrict || !selectedBlock)) {
-      toast.error("Decode UDISE or select state, educational district and block.");
-      return;
-    }
-    if (adminPassword.trim().length < 6) {
-      toast.error("Admin password must be at least 6 characters.");
-      return;
-    }
+
     const cleanSubs = industry === "edu"
       ? [{
           id: nanoid(8),
@@ -344,7 +367,15 @@ function Create() {
                 ))}
               </select>
             </div>
-            <Field label="Organisation name" value={name} onChange={setName} placeholder="e.g. Greenwood Public School" />
+            <Field
+              label="Organisation name"
+              value={name}
+              onChange={setName}
+              placeholder="e.g. Greenwood Public School"
+              required
+              error={fieldErrors.name}
+              onClearError={() => clearError("name")}
+            />
             <div className="grid grid-cols-2 gap-3">
               <Field label="Abbreviation" value={abbr} onChange={setAbbr} placeholder="GPS" />
               <Field label="Type" value={type} onChange={setType} placeholder="K-12 School" />
@@ -361,8 +392,11 @@ function Create() {
                 {educationAssignment && (
                   <div className={`rounded-md border px-3 py-2 text-[12px] ${educationAssignment.status === "ASSIGNED" ? "border-emerald-200 bg-emerald-50 text-emerald-900" : educationAssignment.status === "NEEDS_REVIEW" ? "border-amber-200 bg-amber-50 text-amber-900" : "border-red-200 bg-red-50 text-red-900"}`}>
                     <div className="font-semibold">{educationAssignment.message}</div>
+                    {educationAssignment.schoolName && (
+                      <div className="mt-1 font-medium">{educationAssignment.schoolName} · {educationAssignment.schoolType}</div>
+                    )}
                     {educationAssignment.status !== "ERROR" && (
-                      <div className="mt-1 grid grid-cols-1 sm:grid-cols-2 gap-1">
+                      <div className="mt-1 grid grid-cols-1 sm:grid-cols-2 gap-1 text-[11px]">
                         <span>{educationAssignment.districtOfficerTitle || "District officer"}: {educationAssignment.districtOfficerOffice || "Pending selection"}</span>
                         <span>{educationAssignment.blockOfficerTitle || "Block officer"}: {educationAssignment.blockOfficerOffice || "Pending selection"}</span>
                       </div>
@@ -382,14 +416,47 @@ function Create() {
                     </div>
                   )}
                 </div>
+                {fieldErrors.udiseAssignment && (
+                  <p className="text-[11px] text-red-600">{fieldErrors.udiseAssignment}</p>
+                )}
                 <SectionLabel>School location and board</SectionLabel>
-                <Field label="Board" value={board} onChange={setBoard} placeholder="TN State Board / CBSE / ICSE" />
-                <Field label="Address line 1" value={addressLine1} onChange={setAddressLine1} placeholder="Street, area, village or campus" />
+                <Field
+                  label="Board"
+                  value={board}
+                  onChange={setBoard}
+                  placeholder="TN State Board / CBSE / ICSE"
+                  required
+                  error={fieldErrors.board}
+                  onClearError={() => clearError("board")}
+                />
+                <Field
+                  label="Address line 1"
+                  value={addressLine1}
+                  onChange={setAddressLine1}
+                  placeholder="Street, area, village or campus"
+                  required
+                  error={fieldErrors.addressLine1}
+                  onClearError={() => clearError("addressLine1")}
+                />
                 <Field label="Address line 2" value={addressLine2} onChange={setAddressLine2} placeholder="Optional landmark" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Field label="City / town" value={city} onChange={setCity} />
+                  <Field
+                    label="City / town"
+                    value={city}
+                    onChange={setCity}
+                    required
+                    error={fieldErrors.city}
+                    onClearError={() => clearError("city")}
+                  />
                   <Field label="District" value={district} onChange={setDistrict} />
-                  <Field label="State" value={stateName} onChange={setStateName} />
+                  <Field
+                    label="State"
+                    value={stateName}
+                    onChange={setStateName}
+                    required
+                    error={fieldErrors.stateName}
+                    onClearError={() => clearError("stateName")}
+                  />
                   <Field label="PIN code" value={pincode} onChange={setPincode} />
                 </div>
                 <Field label="Country" value={country} onChange={setCountry} />
@@ -426,7 +493,7 @@ function Create() {
               <div className="space-y-2">
                 {subs.map((s, idx) => (
                   <div key={s.id} className="grid grid-cols-12 gap-2 items-center rounded-md border border-border bg-surface-2 p-2">
-                    <input className="col-span-12 sm:col-span-5 rounded-md border border-border-strong bg-surface px-2 py-1.5 text-[12px]" placeholder={defaults.subdivisionPlaceholder} value={s.name} onChange={(e) => setSubs((arr) => arr.map((x) => (x.id === s.id ? { ...x, name: e.target.value } : x)))} />
+                    <input className="col-span-12 sm:col-span-5 rounded-md border border-border-strong bg-surface px-2 py-1.5 text-[12px]" placeholder={defaults.subdivisionPlaceholder} value={s.name} onChange={(e) => { setSubs((arr) => arr.map((x) => (x.id === s.id ? { ...x, name: e.target.value } : x))); clearError("units"); }} />
                     <input className="col-span-7 sm:col-span-3 rounded-md border border-border-strong bg-surface px-2 py-1.5 text-[12px]" placeholder={defaults.leadPlaceholder} value={s.hod} onChange={(e) => setSubs((arr) => arr.map((x) => (x.id === s.id ? { ...x, hod: e.target.value } : x)))} />
                     <input className="col-span-4 sm:col-span-3 rounded-md border border-border-strong bg-surface px-2 py-1.5 text-[12px]" placeholder={defaults.leadRole} value={s.leadRole} onChange={(e) => setSubs((arr) => arr.map((x) => (x.id === s.id ? { ...x, leadRole: e.target.value } : x)))} />
                     <Btn variant="ghost" size="sm" className="col-span-1 justify-self-end" onClick={() => setSubs((arr) => arr.filter((x) => x.id !== s.id))}><IconTrash className="size-3.5" /></Btn>
@@ -434,6 +501,7 @@ function Create() {
                   </div>
                 ))}
               </div>
+              {fieldErrors.units && <p className="text-[11px] text-red-600 mt-1">{fieldErrors.units}</p>}
             </div>
             <div>
               <label className="block text-[11px] font-semibold text-text-muted mb-1">Role labels</label>
@@ -451,9 +519,34 @@ function Create() {
         <Card>
           <SectionLabel>First admin login</SectionLabel>
           <div className="space-y-3 mt-2">
-            <Field label="Admin name" value={adminName} onChange={setAdminName} placeholder="e.g. Kavitha Raman" />
-            <Field label="Admin email" value={adminEmail} onChange={setAdminEmail} placeholder="admin@school.edu" />
-            <Field label="Temporary password" type="password" value={adminPassword} onChange={setAdminPassword} placeholder="Minimum 6 characters" />
+            <Field
+              label="Admin name"
+              value={adminName}
+              onChange={setAdminName}
+              placeholder="e.g. Kavitha Raman"
+              required
+              error={fieldErrors.adminName}
+              onClearError={() => clearError("adminName")}
+            />
+            <Field
+              label="Admin email"
+              value={adminEmail}
+              onChange={setAdminEmail}
+              placeholder="admin@school.edu"
+              required
+              error={fieldErrors.adminEmail}
+              onClearError={() => clearError("adminEmail")}
+            />
+            <Field
+              label="Temporary password"
+              type="password"
+              value={adminPassword}
+              onChange={setAdminPassword}
+              placeholder="Minimum 6 characters"
+              required
+              error={fieldErrors.adminPassword}
+              onClearError={() => clearError("adminPassword")}
+            />
             <p className="text-[11px] text-text-muted">
               This creates the first organization admin in PostgreSQL. The password is hashed by the backend and is never returned to the browser.
             </p>
@@ -474,24 +567,74 @@ function initials(name: string) {
     .toUpperCase() || "AD";
 }
 
-function Field({ label, value, onChange, placeholder, type = "text" }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) {
+function Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+  required,
+  error,
+  onClearError,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  type?: string;
+  required?: boolean;
+  error?: string;
+  onClearError?: () => void;
+}) {
   return (
     <div>
-      <label className="block text-[11px] font-semibold text-text-muted mb-1">{label}</label>
-      <input type={type} className="w-full rounded-md border border-border-strong bg-surface px-3 py-2 text-[13px]" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
+      <label className="block text-[11px] font-semibold text-text-muted mb-1">
+        {label}{required && <span className="text-red-500 ml-0.5">*</span>}
+      </label>
+      <input
+        type={type}
+        className={`w-full rounded-md border bg-surface px-3 py-2 text-[13px] ${error ? "border-red-400" : "border-border-strong"}`}
+        value={value}
+        onChange={(e) => { onClearError?.(); onChange(e.target.value); }}
+        placeholder={placeholder}
+      />
+      {error && <p className="text-[11px] text-red-600 mt-0.5">{error}</p>}
     </div>
   );
 }
 
-function SelectField({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string }[] }) {
+function SelectField({
+  label,
+  value,
+  onChange,
+  options,
+  required,
+  error,
+  onClearError,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  required?: boolean;
+  error?: string;
+  onClearError?: () => void;
+}) {
   return (
     <div>
-      <label className="block text-[11px] font-semibold text-text-muted mb-1">{label}</label>
-      <select className="w-full rounded-md border border-border-strong bg-surface px-3 py-2 text-[13px]" value={value} onChange={(event) => onChange(event.target.value)}>
+      <label className="block text-[11px] font-semibold text-text-muted mb-1">
+        {label}{required && <span className="text-red-500 ml-0.5">*</span>}
+      </label>
+      <select
+        className={`w-full rounded-md border bg-surface px-3 py-2 text-[13px] ${error ? "border-red-400" : "border-border-strong"}`}
+        value={value}
+        onChange={(event) => { onClearError?.(); onChange(event.target.value); }}
+      >
         {options.map((option) => (
           <option key={option.value} value={option.value}>{option.label}</option>
         ))}
       </select>
+      {error && <p className="text-[11px] text-red-600 mt-0.5">{error}</p>}
     </div>
   );
 }
