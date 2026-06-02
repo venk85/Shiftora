@@ -16,6 +16,7 @@ coverage/
 # Backend build output
 target/
 backend/target/
+*.class
 
 # Local env/secrets
 .env
@@ -31,6 +32,9 @@ pgadmin-servers.json
 *.pgpass
 *.dump
 *.backup
+
+# Let's Encrypt certificates and certbot state
+certbot/
 
 # Logs
 *.log

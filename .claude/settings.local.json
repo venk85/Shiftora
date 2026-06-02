@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(PGPASSWORD=shiftora psql -h 127.0.0.1 -p 15432 -U shiftora -d shiftora -c \"SELECT COUNT\\(*\\) as states FROM education_states; \")",
+      "Bash(PGPASSWORD=shiftora psql -h 127.0.0.1 -p 15432 -U shiftora -d shiftora -c \"SELECT COUNT\\(*\\) as districts FROM educational_districts;\")",
+      "Bash(PGPASSWORD=shiftora psql -h 127.0.0.1 -p 15432 -U shiftora -d shiftora -c \"SELECT COUNT\\(*\\) as blocks FROM education_blocks;\")",
+      "Bash(docker exec *)"
+    ]
+  }
+}
