@@ -61,6 +61,7 @@ $COMPOSE run --rm certbot certonly \
   --webroot -w /var/www/certbot \
   --email "$EMAIL" \
   --agree-tos --no-eff-email \
+  --force-renewal \
   $DOMAINS
 
 echo "==> Removing temporary certificate..."
