@@ -5,6 +5,17 @@
 
 set -euo pipefail
 
+# Load env file from repo root so LETSENCRYPT_EMAIL and other vars are available
+# when the script is invoked directly (without prior `source .env.azure`).
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="$SCRIPT_DIR/../.env.azure"
+if [ -f "$ENV_FILE" ]; then
+  set -a
+  # shellcheck source=../.env.azure
+  source "$ENV_FILE"
+  set +a
+fi
+
 DOMAIN="skillshifts.in"
 DOMAINS="-d skillshifts.in -d www.skillshifts.in"
 EMAIL="${LETSENCRYPT_EMAIL:?Set LETSENCRYPT_EMAIL in .env.azure}"
