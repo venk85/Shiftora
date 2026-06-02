@@ -1,0 +1,14 @@
+alter table education_states validate constraint chk_education_states_code_shape;
+alter table education_states validate constraint chk_education_states_udise_block_digits;
+
+alter table educational_districts validate constraint chk_educational_districts_code_shape;
+alter table educational_districts validate constraint chk_educational_districts_state_prefix;
+
+alter table education_blocks validate constraint chk_education_blocks_code_shape;
+alter table education_blocks validate constraint chk_education_blocks_district_prefix;
+alter table education_blocks validate constraint chk_education_blocks_state_prefix;
+
+alter table registered_schools validate constraint chk_registered_schools_udise_shape;
+alter table registered_schools validate constraint chk_registered_schools_state_prefix;
+alter table registered_schools validate constraint chk_registered_schools_district_prefix;
+alter table registered_schools validate constraint chk_registered_schools_block_prefix;

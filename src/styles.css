@@ -1,0 +1,171 @@
+@import "tailwindcss" source(none);
+@import "tw-animate-css";
+@source "../src";
+
+@theme inline {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  --color-bg: var(--bg);
+  --color-surface: var(--s1);
+  --color-surface-2: var(--s3);
+  --color-surface-3: var(--s4);
+  --color-border: var(--bd);
+  --color-border-strong: var(--bd2);
+
+  --color-text: var(--t1);
+  --color-text-muted: var(--t2);
+  --color-text-subtle: var(--t3);
+
+  --color-primary: var(--b);
+  --color-primary-soft: var(--bl);
+  --color-primary-border: var(--bb);
+  --color-primary-strong: var(--bt);
+
+  --color-gold: var(--g);
+  --color-gold-soft: var(--gl);
+  --color-gold-border: var(--gb);
+
+  --color-teal: var(--tl);
+  --color-teal-soft: var(--tll);
+  --color-teal-border: var(--tlb);
+
+  --color-violet: var(--vi);
+  --color-violet-soft: var(--vil);
+  --color-violet-border: var(--vib);
+
+  --color-success: var(--ok);
+  --color-success-soft: var(--okl);
+  --color-success-border: var(--okb);
+
+  --color-error: var(--er);
+  --color-error-soft: var(--erl);
+
+  --color-warn: var(--am);
+  --color-warn-soft: var(--aml);
+
+  /* shadcn shims so existing ui/* keeps working in light theme */
+  --color-background: var(--bg);
+  --color-foreground: var(--t1);
+  --color-card: var(--s1);
+  --color-card-foreground: var(--t1);
+  --color-popover: var(--s1);
+  --color-popover-foreground: var(--t1);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--s4);
+  --color-secondary-foreground: var(--t1);
+  --color-muted: var(--s4);
+  --color-muted-foreground: var(--t2);
+  --color-accent: var(--s4);
+  --color-accent-foreground: var(--t1);
+  --color-destructive: var(--er);
+  --color-destructive-foreground: #ffffff;
+  --color-input: var(--bd2);
+  --color-ring: var(--b);
+  --color-sidebar: var(--s1);
+}
+
+:root {
+  --bg: #F0F3FA;
+  --s1: #FFFFFF;
+  --s2: #FFFFFF;
+  --s3: #F7F9FD;
+  --s4: #EEF1F8;
+  --s5: #E5E9F5;
+
+  --bd: rgba(15, 23, 42, 0.07);
+  --bd2: rgba(15, 23, 42, 0.12);
+  --bd3: rgba(15, 23, 42, 0.20);
+
+  --b: #4069F0;
+  --bl: rgba(64, 105, 240, 0.08);
+  --bb: rgba(64, 105, 240, 0.22);
+  --bt: #2F55D4;
+
+  --g: #C48C0A;
+  --gl: rgba(196, 140, 10, 0.08);
+  --gb: rgba(196, 140, 10, 0.22);
+  --gt: #9E7008;
+
+  --ok: #16A34A;
+  --okl: rgba(22, 163, 74, 0.08);
+  --okb: rgba(22, 163, 74, 0.22);
+  --er: #DC2626;
+  --erl: rgba(220, 38, 38, 0.08);
+  --am: #D97706;
+  --aml: rgba(217, 119, 6, 0.08);
+
+  --tl: #0D9488;
+  --tll: rgba(13, 148, 136, 0.08);
+  --tlb: rgba(13, 148, 136, 0.22);
+
+  --vi: #7C3AED;
+  --vil: rgba(124, 58, 237, 0.08);
+  --vib: rgba(124, 58, 237, 0.22);
+
+  --t1: #0F172A;
+  --t2: #64748B;
+  --t3: #94A3B8;
+
+  --sh: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --sh2: 0 4px 12px rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.04);
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--t1);
+  font-size: 13px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "tnum";
+}
+
+.shadow-card { box-shadow: var(--sh); }
+.shadow-card-hover { box-shadow: var(--sh2); }
+
+.section-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--t3);
+}
+
+.metric-num {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #4069F0, #7C3AED);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.progress-track {
+  height: 8px;
+  background: var(--s4);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--b), #7C3AED);
+  transition: width 0.6s ease;
+}
+
+input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(64, 105, 240, 0.1);
+  border-color: var(--b) !important;
+}

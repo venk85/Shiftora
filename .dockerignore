@@ -1,0 +1,11 @@
+node_modules
+dist
+.git
+.env
+.env.local
+.env.*.local
+.env.azure
+.env.azure.*
+npm-debug.log
+backend/target
+backend/.mvn/wrapper/maven-wrapper.jar
