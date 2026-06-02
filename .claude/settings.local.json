@@ -21,7 +21,13 @@
       "Bash(python3 -m json.tool)",
       "Bash(curl -s \"http://localhost:8090/api/education/udise/decode?code=33010100101\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8090/)",
-      "Bash(curl -s \"http://localhost:8081/api/education/udise/decode?code=33010100101\")"
+      "Bash(curl -s \"http://localhost:8081/api/education/udise/decode?code=33010100101\")",
+      "Bash(curl -s -X POST http://localhost:8081/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"admin@example.com\",\"password\":\"__TRACKED_VAR__\"}')",
+      "Bash(curl -s -H \"Cookie: auth=test\" \"http://localhost:8090/platform/create\")",
+      "Bash(curl -s \"http://localhost:8090/api/education/udise/decode?code=33010100804\")",
+      "Bash(git push *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ],
     "additionalDirectories": [
       "/private/tmp"
