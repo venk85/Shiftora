@@ -393,19 +393,18 @@ function FileInputField({
 
   return (
     <div>
+      <input
+        ref={inputRef}
+        type="file"
+        className="sr-only"
+        accept={accept}
+        onChange={handleChange}
+      />
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
         className="flex items-center gap-2 w-full rounded-md border border-dashed border-border-strong bg-surface px-3 py-2.5 text-[12px] hover:bg-surface-2 transition-colors text-left"
       >
-        <input
-          ref={inputRef}
-          type="file"
-          className="sr-only"
-          accept={accept}
-          key={inputKey}
-          onChange={handleChange}
-        />
         {reading ? (
           <><IconLoader2 className="size-3.5 animate-spin text-primary shrink-0" /><span className="text-text-muted">Reading file…</span></>
         ) : loaded && fileName ? (
