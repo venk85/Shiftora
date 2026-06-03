@@ -16,5 +16,6 @@ public record ScenarioDto(
     @Valid List<ScenarioInputDto> inputs,
     @NotBlank String systemPrompt,
     @NotEmpty List<@NotBlank String> scoreLabels,
+    List<String> tags,
     int sortOrder
 ) {}

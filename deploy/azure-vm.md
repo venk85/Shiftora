@@ -66,18 +66,22 @@ ANTHROPIC_MODEL=claude-sonnet-4-5
 
 ### Step 3 — Bootstrap HTTPS (first deploy only)
 
+> **Prerequisites:** DNS A records for `skillshifts.in` and `www.skillshifts.in` must already point to this VM's public IP, and Azure NSG rules must allow inbound TCP 80 and 443.
+
 Run once before starting the full stack:
 
 ```bash
-source .env.azure
 bash deploy/init-letsencrypt.sh
 ```
 
+The script sources `.env.azure` automatically — no need to `source` it first.
+
 This will:
-1. Create a temporary self-signed cert so Nginx can start
-2. Start the Nginx proxy on port 80
-3. Request the real cert from Let's Encrypt via HTTP-01 challenge
-4. Reload Nginx with the real certificate
+1. Create a temporary self-signed cert so Nginx can start on port 80
+2. Verify the ACME challenge path is reachable (HTTP 200 self-test)
+3. Remove the temporary cert directory (certbot requires the directory to not exist)
+4. Request the real cert from Let's Encrypt via HTTP-01 challenge
+5. Reload Nginx with the real certificate
 
 Skip this step for HTTP-only deployments (not recommended for production).
 
@@ -189,16 +193,27 @@ Pull the latest code and rebuild:
 cd ~/Shiftora
 git pull origin main
 
-docker compose --env-file .env.azure -f docker-compose.azure-vm.yml up -d --build
+docker compose --env-file .env.azure -f docker-compose.azure-vm.yml build
+docker compose --env-file .env.azure -f docker-compose.azure-vm.yml up -d
 ```
+
+> **Note:** Use `build` then `up -d` as two separate commands. The `--no-cache` flag belongs on `build`, not `up`.
 
 Flyway runs automatically on API startup and applies any new migrations.  
 No need to manually run SQL files.
 
-To rebuild only one service (e.g., API only):
+To rebuild only specific services (e.g., after a backend-only change):
 
 ```bash
-docker compose --env-file .env.azure -f docker-compose.azure-vm.yml up -d --build api
+docker compose --env-file .env.azure -f docker-compose.azure-vm.yml build api
+docker compose --env-file .env.azure -f docker-compose.azure-vm.yml up -d api
+```
+
+To force a full rebuild ignoring Docker layer cache (e.g., after changing base images or system deps):
+
+```bash
+docker compose --env-file .env.azure -f docker-compose.azure-vm.yml build --no-cache api web
+docker compose --env-file .env.azure -f docker-compose.azure-vm.yml up -d api web
 ```
 
 ---
@@ -259,6 +274,39 @@ Current migrations (V1 → V22):
 | V20 | UDISE district + block master |
 | V21 | Seed platform admin user |
 | V22 | TN school master table (schema only — data loaded separately via COPY) |
+| V23 | Seed 3 edu teacher scenarios (Lesson Generator, Paper Evaluation, Learning Paths) |
+
+---
+
+## AI Sandbox — Teacher Use Cases
+
+Three teacher-focused AI sandbox scenarios are seeded by Flyway migration V23 on first API startup:
+
+| Scenario | ID | Tags |
+|---|---|---|
+| AI Lesson & Resource Generator | `edu-lesson-resource-gen` | NCERT Aligned, HOTS Questions, Instant PPT, Exit Tickets |
+| AI-Powered Paper Evaluation | `edu-paper-evaluation` | Handwriting OCR, Auto-Scoring, Topic Feedback, Parent Reports |
+| Personalised Student Learning Paths | `edu-learning-path` | Learning Gaps, Study Plans, Pace Tracking, AI Tutor |
+
+**Requirements:**
+- `ANTHROPIC_API_KEY` must be set in `.env.azure` (the API key is used for all sandbox runs)
+- The tenant's industry must be `edu`
+
+**Verify scenarios loaded:**
+```bash
+TOKEN=$(curl -s -X POST https://skillshifts.in/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@example.com","password":"Shiftora@123"}' \
+  | python3 -c "import sys,json; print(json.load(sys.stdin).get('token',''))")
+
+curl -s -H "Authorization: Bearer $TOKEN" \
+  "https://skillshifts.in/api/scenarios?industry=edu" | python3 -m json.tool
+```
+
+Expected: JSON array of 3 scenario objects with `id`, `title`, `tags`, etc.
+
+**Paper Evaluation — file upload:**  
+Teachers can upload handwritten student answer sheets (JPG/PNG/PDF). The file is read in the browser and sent as a base64 payload — no S3 or file storage needed. Claude reads the handwriting via its vision API.
 
 ---
 

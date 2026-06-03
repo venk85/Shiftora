@@ -1,5 +1,7 @@
 server:
   port: ${PORT:8081}
+  tomcat:
+    max-http-form-post-size: 20MB
 
 spring:
   config:
@@ -14,6 +16,7 @@ spring:
     password: ${DATABASE_PASSWORD:shiftora}
   flyway:
     enabled: true
+    placeholder-replacement: false
   jpa:
     hibernate:
       ddl-auto: validate

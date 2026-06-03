@@ -29,6 +29,7 @@ public class ScenarioMapper {
         read(config.get("inputs"), new TypeReference<>() {}),
         read(config.get("systemPrompt"), String.class, ""),
         read(config.get("scoreLabels"), new TypeReference<>() {}),
+        read(config.get("tags"), new TypeReference<>() {}),
         entity.getSortOrder());
   }
 
@@ -44,6 +45,7 @@ public class ScenarioMapper {
     config.put("inputs", dto.inputs());
     config.put("systemPrompt", dto.systemPrompt());
     config.put("scoreLabels", dto.scoreLabels());
+    config.put("tags", dto.tags());
     entity.setConfig(config);
     return entity;
   }

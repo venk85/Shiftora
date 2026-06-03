@@ -4,7 +4,7 @@ import { type Scenario } from "@/lib/shiftora-config";
 import { shiftoraApi, type Assignment, type AppUser } from "@/lib/shiftora-api";
 import { useI18n } from "@/lib/use-i18n";
 import { Card, PageHeader, SectionLabel, Chip, Btn } from "@/components/shiftora/primitives";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
 import { motion } from "framer-motion";
@@ -14,6 +14,8 @@ import {
   IconLoader2,
   IconBookmark,
   IconAlertTriangle,
+  IconUpload,
+  IconCheck,
 } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/learner/sandbox")({
@@ -66,9 +68,9 @@ function SandboxPage() {
                 <div className="font-semibold text-[14px] mb-1">{s.title}</div>
                 <p className="text-[12px] text-text-muted mb-3">{s.desc}</p>
                 <div className="flex flex-wrap gap-1">
-                  {s.scoreLabels.map((l) => (
-                    <Chip key={l} tone="muted" className="text-[10px]">
-                      {l}
+                  {(s.tags ?? s.scoreLabels).map((t) => (
+                    <Chip key={t} tone="muted" className="text-[10px]">
+                      {t}
                     </Chip>
                   ))}
                 </div>
@@ -208,6 +210,14 @@ function SandboxWorkspace({ scenario, onBack }: { scenario: Scenario; onBack: ()
                     </option>
                   ))}
                 </select>
+              ) : inp.type === "file" ? (
+                <FileInputField
+                  inputKey={inp.key}
+                  accept={inp.accept}
+                  placeholder={inp.placeholder}
+                  loaded={isFileValue(values[inp.key])}
+                  onLoad={(value) => updateValue(inp.key, value)}
+                />
               ) : (
                 <input
                   type={inp.type === "number" ? "number" : "text"}
@@ -298,6 +308,10 @@ function SandboxWorkspace({ scenario, onBack }: { scenario: Scenario; onBack: ()
   );
 }
 
+function isFileValue(value: string) {
+  return value.startsWith("data:") && value.includes(";base64,");
+}
+
 function nonEmptyValues(values: Record<string, string>) {
   return Object.fromEntries(Object.entries(values).filter(([, value]) => value.trim()));
 }
@@ -306,7 +320,11 @@ function practiceInputs(
   values: Record<string, string>,
   context: { user: AppUser; assignment: Assignment; count: number } | null,
 ) {
-  const inputs: Record<string, string> = { ...nonEmptyValues(values) };
+  // Strip base64 file content before saving — too large for the practice log
+  const stripped = Object.fromEntries(
+    Object.entries(values).filter(([, v]) => v.trim() && !isFileValue(v)),
+  );
+  const inputs: Record<string, string> = { ...stripped };
   if (!context) return inputs;
   inputs.school = context.assignment.schoolName;
   inputs.grade = context.assignment.grade;
@@ -324,6 +342,81 @@ function errorMessage(error: unknown, fallback: string) {
     if (message) return message;
   }
   return fallback;
+}
+
+function FileInputField({
+  inputKey,
+  accept,
+  placeholder,
+  loaded,
+  onLoad,
+}: {
+  inputKey: string;
+  accept?: string;
+  placeholder?: string;
+  loaded: boolean;
+  onLoad: (value: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [fileName, setFileName] = useState("");
+  const [reading, setReading] = useState(false);
+  const [fileError, setFileError] = useState("");
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFileName(file.name);
+    setFileError("");
+    setReading(true);
+    const reader = new FileReader();
+    reader.onerror = () => {
+      setFileError("Could not read file. Try a different format.");
+      setReading(false);
+    };
+    if (file.type.startsWith("image/")) {
+      reader.onload = () => { onLoad(reader.result as string); setReading(false); };
+      reader.readAsDataURL(file);
+    } else if (file.type === "application/pdf") {
+      reader.onload = () => {
+        const bytes = new Uint8Array(reader.result as ArrayBuffer);
+        let binary = "";
+        for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+        onLoad(`data:application/pdf;base64,${btoa(binary)}`);
+        setReading(false);
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      reader.onload = () => { onLoad(reader.result as string); setReading(false); };
+      reader.readAsText(file);
+    }
+  };
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        className="flex items-center gap-2 w-full rounded-md border border-dashed border-border-strong bg-surface px-3 py-2.5 text-[12px] hover:bg-surface-2 transition-colors text-left"
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          className="sr-only"
+          accept={accept}
+          key={inputKey}
+          onChange={handleChange}
+        />
+        {reading ? (
+          <><IconLoader2 className="size-3.5 animate-spin text-primary shrink-0" /><span className="text-text-muted">Reading file…</span></>
+        ) : loaded && fileName ? (
+          <><IconCheck className="size-3.5 text-green-500 shrink-0" /><span className="text-text font-medium truncate">{fileName}</span><span className="ml-auto text-[10px] text-green-500 shrink-0">loaded</span></>
+        ) : (
+          <><IconUpload className="size-3.5 text-text-muted shrink-0" /><span className="text-text-muted">{placeholder ?? "Click to upload file"}</span></>
+        )}
+      </button>
+      {fileError && <p className="text-[11px] text-red-500 mt-0.5">{fileError}</p>}
+    </div>
+  );
 }
 
 function contextDefaults(

@@ -64,12 +64,12 @@ public class SandboxService {
 
     var labels = request.scoreLabels();
     var system = buildSystemPrompt(request, labels);
-    var userMessage = buildUserMessage(request);
+    var userContent = buildUserContent(request);
     var body = Map.of(
         "model", model,
-        "max_tokens", 2400,
+        "max_tokens", 8192,
         "system", system,
-        "messages", List.of(Map.of("role", "user", "content", userMessage)),
+        "messages", List.of(Map.<String, Object>of("role", "user", "content", userContent)),
         "tools", List.of(deliverResponseTool(labels)),
         "tool_choice", Map.of("type", "tool", "name", "deliver_response"));
 
@@ -100,12 +100,53 @@ public class SandboxService {
         + "), each with an integer value 75-98 reflecting the quality of THIS response on that dimension.";
   }
 
-  private String buildUserMessage(SandboxRequestDto request) {
-    var lines = new ArrayList<String>();
+  private Object buildUserContent(SandboxRequestDto request) {
     var inputs = request.inputs() == null ? Map.<String, String>of() : request.inputs();
-    inputs.forEach((key, value) -> lines.add("**" + key + "**: " + (value == null || value.isBlank() ? "(not provided)" : value)));
-    return "Scenario: " + request.scenarioTitle() + "\n\nInputs:\n" + String.join("\n", lines)
-        + "\n\nGenerate the response now using the deliver_response tool.";
+    var textLines = new ArrayList<String>();
+    var fileBlocks = new ArrayList<Map<String, Object>>();
+
+    inputs.forEach((key, value) -> {
+      if (value != null && isBase64DataUrl(value)) {
+        String mediaType = extractMediaType(value);
+        String base64Data = extractBase64Data(value);
+        textLines.add("**" + key + "**: [attached file — see content block above]");
+        if (mediaType.startsWith("image/")) {
+          fileBlocks.add(Map.of("type", "image",
+              "source", Map.of("type", "base64", "media_type", mediaType, "data", base64Data)));
+        } else if ("application/pdf".equals(mediaType)) {
+          fileBlocks.add(Map.of("type", "document",
+              "source", Map.of("type", "base64", "media_type", mediaType, "data", base64Data)));
+        }
+      } else {
+        textLines.add("**" + key + "**: " + (value == null || value.isBlank() ? "(not provided)" : value));
+      }
+    });
+
+    String textContent = "Scenario: " + request.scenarioTitle() + "\n\nInputs:\n"
+        + String.join("\n", textLines) + "\n\nGenerate the response now using the deliver_response tool.";
+
+    if (fileBlocks.isEmpty()) {
+      return textContent;
+    }
+
+    var contentBlocks = new ArrayList<Object>();
+    contentBlocks.addAll(fileBlocks);
+    contentBlocks.add(Map.of("type", "text", "text", textContent));
+    return contentBlocks;
+  }
+
+  private boolean isBase64DataUrl(String value) {
+    return value.startsWith("data:") && value.contains(";base64,");
+  }
+
+  private String extractMediaType(String dataUrl) {
+    int semicolon = dataUrl.indexOf(';');
+    return semicolon > 5 ? dataUrl.substring(5, semicolon) : "application/octet-stream";
+  }
+
+  private String extractBase64Data(String dataUrl) {
+    int comma = dataUrl.indexOf(',');
+    return comma >= 0 ? dataUrl.substring(comma + 1) : "";
   }
 
   private Map<String, Object> deliverResponseTool(List<String> labels) {

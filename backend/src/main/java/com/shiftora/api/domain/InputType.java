@@ -4,5 +4,6 @@ public enum InputType {
   text,
   textarea,
   select,
-  number
+  number,
+  file
 }

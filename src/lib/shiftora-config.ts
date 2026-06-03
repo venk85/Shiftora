@@ -71,12 +71,14 @@ export type Scenario = {
   inputs: {
     key: string;
     label: string;
-    type: "text" | "textarea" | "select" | "number";
+    type: "text" | "textarea" | "select" | "number" | "file";
     options?: string[];
     placeholder?: string;
+    accept?: string; // for file inputs: MIME types / extensions, e.g. "image/*,.pdf"
   }[];
   systemPrompt: string;
   scoreLabels: string[]; // 3 labels, e.g. ["Curriculum alignment","Engagement design","Time distribution"]
+  tags?: string[]; // feature chips shown on the scenario card
 };
 
 export type Tenant = {

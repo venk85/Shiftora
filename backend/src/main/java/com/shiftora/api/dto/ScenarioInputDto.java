@@ -10,5 +10,6 @@ public record ScenarioInputDto(
     @NotBlank String label,
     @NotNull InputType type,
     List<String> options,
-    String placeholder
+    String placeholder,
+    String accept
 ) {}

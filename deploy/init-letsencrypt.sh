@@ -56,9 +56,10 @@ if [ "$HTTP_CODE" != "200" ]; then
 fi
 echo "   OK — nginx is serving the challenge path (HTTP 200)"
 
-# Remove temp cert so certbot can write the real one without conflict.
-# nginx keeps the cert loaded in memory and stays running for the HTTP challenge.
-rm -f "$CERT_DIR/fullchain.pem" "$CERT_DIR/privkey.pem"
+# Remove the entire temp-cert directory so certbot can issue the real cert.
+# Certbot checks for the directory's existence, not just the cert files inside it.
+# nginx keeps the cert loaded in memory and continues serving the HTTP challenge.
+rm -rf "$CERT_DIR"
 
 echo "==> Requesting Let's Encrypt certificate for $DOMAIN..."
 $COMPOSE run --rm certbot certonly \
