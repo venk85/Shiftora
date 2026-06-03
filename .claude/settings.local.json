@@ -27,7 +27,27 @@
       "Bash(curl -s \"http://localhost:8090/api/education/udise/decode?code=33010100804\")",
       "Bash(git push *)",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(npx tsc *)",
+      "Bash(./mvnw compile *)",
+      "Bash(mvn compile *)",
+      "Bash(python3 -c \"import sys,json; scripts=json.load\\(sys.stdin\\).get\\('scripts',{}\\); [print\\(k,':',v\\) for k,v in scripts.items\\(\\)]\")",
+      "Bash(curl -s -X POST http://localhost:8081/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"admin@example.com\",\"password\":\"shiftora2024\"}')",
+      "Bash(git -C /Users/venkat/workspace/Shiftora diff --stat HEAD)",
+      "Bash(xargs cat)",
+      "Bash(mvn -q package -DskipTests)",
+      "Bash(mvn -q -f backend/pom.xml package -DskipTests)",
+      "Bash(npm run *)",
+      "Bash(echo \"PID: $!\")",
+      "Bash(kill 12990)",
+      "Bash(curl -s --max-time 5 \"http://$\\(docker inspect --format='{{.NetworkSettings.Networks | json }}' shiftora-local-web-1)",
+      "Bash(docker run *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8090/learner/sandbox -H \"Host: skillshifts.in\")",
+      "Bash(grep -v \"^$\")",
+      "Bash(docker rmi *)",
+      "Bash(docker cp *)",
+      "Bash(git -C /Users/venkat/workspace/Shiftora log --oneline -- deploy/nginx.conf)",
+      "Bash(git -C /Users/venkat/workspace/Shiftora show a87ed3f:deploy/nginx.conf)"
     ],
     "additionalDirectories": [
       "/private/tmp"

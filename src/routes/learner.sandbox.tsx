@@ -110,6 +110,7 @@ function SandboxWorkspace({ scenario, onBack }: { scenario: Scenario; onBack: ()
           count: journey.assignments.length,
         });
         setValues((current) => ({
+          ...Object.fromEntries(scenario.inputs.map((i) => [i.key, ""])),
           ...contextDefaults(scenario, journey.activeAssignment, journey.user, tenant.type),
           ...nonEmptyValues(current),
         }));
@@ -308,8 +309,8 @@ function SandboxWorkspace({ scenario, onBack }: { scenario: Scenario; onBack: ()
   );
 }
 
-function isFileValue(value: string) {
-  return value.startsWith("data:") && value.includes(";base64,");
+function isFileValue(value: string | undefined): boolean {
+  return !!value && value.startsWith("data:") && value.includes(";base64,");
 }
 
 function nonEmptyValues(values: Record<string, string>) {
