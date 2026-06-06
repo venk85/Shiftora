@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useActiveTenant } from "@/lib/shiftora-store";
+import { useActiveTenant, useApp } from "@/lib/shiftora-store";
 import { Card, PageHeader, Metric, ProgressBar, Chip, SectionLabel } from "@/components/shiftora/primitives";
 
 export const Route = createFileRoute("/hod/dashboard")({ component: HodDash });
 
 function HodDash() {
   const tenant = useActiveTenant();
+  const currentUser = useApp((s) => s.currentUser);
   const dept = tenant.subdivisions[0];
   const people = Array.from({ length: 8 }).map((_, i) => ({
     n: ["Aarav S", "Priya M", "Rohan K", "Neha R", "Vikram P", "Sara T", "Karan D", "Meera J"][i],
@@ -13,9 +14,25 @@ function HodDash() {
     quality: 92 - i * 3,
     status: i < 5 ? "Active" : "Catching up",
   }));
+  if (!dept) {
+    return (
+      <div>
+        <PageHeader title={`${tenant.personas.hod.title.split("·")[0].trim()} view`} subtitle="Department overview" />
+        <div className="text-[13px] text-text-muted mt-4">No department configured yet. Ask your admin to set up a department under School config.</div>
+      </div>
+    );
+  }
+
+  const hodValue = dept.hod && dept.hod !== "TBD" ? dept.hod : "";
+  const ownerName = hodValue || currentUser?.name;
+
   return (
     <div>
-      <PageHeader title={`${dept.name} · ${tenant.personas.hod.title.split("·")[0].trim()} view`} subtitle={`${dept.staff} people · ${dept.adoption}% adoption`} right={<Chip tone="blue">Owner: {dept.hod}</Chip>} />
+      <PageHeader
+        title={`${dept.name} · ${tenant.personas.hod.title.split("·")[0].trim()} view`}
+        subtitle={`${dept.staff} people · ${dept.adoption}% adoption`}
+        right={ownerName ? <Chip tone="blue">Owner: {ownerName}</Chip> : undefined}
+      />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         <Metric label="Team adoption" value={`${dept.adoption}%`} tone="violet" />
         <Metric label="Maturity" value={`${dept.maturity}%`} tone="blue" />

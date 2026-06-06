@@ -24,14 +24,17 @@ function DeoOverview() {
   const currentUser = useApp((state) => state.currentUser);
   const [overview, setOverview] = useState<DeoOverviewData | null>(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setError("");
+    setLoading(true);
     const scopedTenantId = currentUser?.role === "deo" && !currentUser.isSuper ? undefined : tenant.id;
     shiftoraApi
       .deoOverview(scopedTenantId)
       .then(setOverview)
-      .catch((err) => setError(err instanceof Error ? err.message : "Unable to load DEO overview"));
+      .catch((err) => setError(err instanceof Error ? err.message : "Unable to load DEO overview"))
+      .finally(() => setLoading(false));
   }, [currentUser?.isSuper, currentUser?.role, tenant.id]);
 
   return (
@@ -45,9 +48,23 @@ function DeoOverview() {
           </Chip>
         }
       />
+      {loading && !overview && (
+        <Card className="mb-5">
+          <div className="text-[13px] text-text-muted">Loading district data…</div>
+        </Card>
+      )}
       {error && (
         <Card className="mb-5">
-          <div className="text-[13px] font-semibold text-[color:var(--er)]">{error}</div>
+          <div className="text-[13px] font-semibold text-[color:var(--er)]">
+            {error.toLowerCase().includes("not configured") || error.toLowerCase().includes("no data")
+              ? "No DEO data is configured for this district. Contact the platform admin to seed district and block data."
+              : error}
+          </div>
+        </Card>
+      )}
+      {!loading && !error && !overview && (
+        <Card className="mb-5">
+          <div className="text-[13px] text-text-muted">No district overview data found. The DEO profile may not be fully configured yet.</div>
         </Card>
       )}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
@@ -92,7 +109,7 @@ function DeoOverview() {
               >
                 <div className="flex items-center justify-between">
                   <div className="font-semibold">{block.name}</div>
-                  <Chip tone={block.schools === 0 ? "default" : block.critical ? "er" : block.score >= 80 ? "ok" : "blue"}>
+                  <Chip tone={block.schools === 0 ? "muted" : block.critical ? "er" : block.score >= 80 ? "ok" : "blue"}>
                     {block.schools === 0 ? "No schools" : block.critical ? "Critical" : "Active"}
                   </Chip>
                 </div>

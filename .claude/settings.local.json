@@ -47,7 +47,23 @@
       "Bash(docker rmi *)",
       "Bash(docker cp *)",
       "Bash(git -C /Users/venkat/workspace/Shiftora log --oneline -- deploy/nginx.conf)",
-      "Bash(git -C /Users/venkat/workspace/Shiftora show a87ed3f:deploy/nginx.conf)"
+      "Bash(git -C /Users/venkat/workspace/Shiftora show a87ed3f:deploy/nginx.conf)",
+      "Bash(git stash *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" -L http://localhost:8090/)",
+      "Bash(curl -s -X POST http://localhost:8081/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"deo@shiftora.edu.in\",\"password\":\"shiftora123\"}')",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({k: d[k] for k in ['token','error','message'] if k in d}, indent=2\\)\\)\")",
+      "Bash(curl -s -X POST http://localhost:8081/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"deo@shiftora.edu.in\",\"password\":\"Shiftora@123\"}')",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d, indent=2\\)[:500]\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\([{'id':t['id'],'name':t['name'],'industry':t['industry']} for t in d], indent=2\\)\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({'role':d['user']['role'],'isSuper':d['user']['isSuper'],'tenantId':d['user'].get\\('tenantId',''\\)}, indent=2\\)\\)\")",
+      "Bash(npx playwright *)",
+      "Bash(node screenshots/capture.mjs)",
+      "Bash(npx --yes playwright --version)",
+      "Bash(ls ~/.npm/_npx/ 2>/dev/null | head -5; find ~/.npm/_npx -name \"package.json\" 2>/dev/null | xargs grep -l '\"playwright\"' 2>/dev/null | head -3)",
+      "Read(//Users/venkat/.npm/_npx/**)",
+      "Bash(node screenshots/debug.mjs)",
+      "Bash(curl -s -X POST http://localhost:8081/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"demoadmin@dps.com\",\"password\":\"Shiftora@123\"}')",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('role:', d['user']['role'], '| tenant:', d['user'].get\\('tenantId',''\\)[:20]\\)\")"
     ],
     "additionalDirectories": [
       "/private/tmp"

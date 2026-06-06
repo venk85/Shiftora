@@ -25,7 +25,20 @@ function Workshop() {
   return (
     <div>
       <PageHeader title={t("liveWorkshop")} subtitle={t("handsOnCohortSession").replace("AI", tenant.aiName)} />
-      {error && <Card className="mb-4"><div className="text-[13px] text-[color:var(--er)]">{error}</div></Card>}
+      {error && (
+        <Card className="mb-4">
+          {error.toLowerCase().includes("not configured") ? (
+            <div className="space-y-1">
+              <div className="text-[13px] font-semibold text-text">No workshop scheduled yet</div>
+              <div className="text-[12px] text-text-muted">
+                Your admin hasn't set up a workshop session for this programme. Check back soon, or contact your school admin to schedule one.
+              </div>
+            </div>
+          ) : (
+            <div className="text-[13px] text-[color:var(--er)]">{error}</div>
+          )}
+        </Card>
+      )}
       {session && (
         <>
           <Card className="mb-4">

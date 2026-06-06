@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   Card,
@@ -31,16 +31,27 @@ function heatTone(score: number) {
 function BeoOverview() {
   const tenant = useActiveTenant();
   const currentUser = useApp((state) => state.currentUser);
+  const nav = useNavigate();
   const [overview, setOverview] = useState<BeoOverviewData | null>(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  // Guard: if user's actual role is DEO (data mismatch), redirect to the right page.
+  useEffect(() => {
+    if (currentUser && !currentUser.isSuper && currentUser.role === "deo") {
+      void nav({ to: "/deo/overview" });
+    }
+  }, [currentUser, nav]);
 
   useEffect(() => {
     setError("");
+    setLoading(true);
     const scopedTenantId = currentUser?.role === "beo" && !currentUser.isSuper ? undefined : tenant.id;
     shiftoraApi
       .beoOverview(scopedTenantId)
       .then(setOverview)
-      .catch((err) => setError(err instanceof Error ? err.message : "Unable to load BEO overview"));
+      .catch((err) => setError(err instanceof Error ? err.message : "Unable to load BEO overview"))
+      .finally(() => setLoading(false));
   }, [currentUser?.isSuper, currentUser?.role, tenant.id]);
 
   return (
@@ -54,9 +65,23 @@ function BeoOverview() {
           </Chip>
         }
       />
+      {loading && !overview && (
+        <Card className="mb-5">
+          <div className="text-[13px] text-text-muted">Loading block data…</div>
+        </Card>
+      )}
       {error && (
         <Card className="mb-5">
-          <div className="text-[13px] font-semibold text-[color:var(--er)]">{error}</div>
+          <div className="text-[13px] font-semibold text-[color:var(--er)]">
+            {error.toLowerCase().includes("not configured") || error.toLowerCase().includes("no data")
+              ? "No BEO data is configured for this block. Contact the platform admin to assign block and school data."
+              : error}
+          </div>
+        </Card>
+      )}
+      {!loading && !error && !overview && (
+        <Card className="mb-5">
+          <div className="text-[13px] text-text-muted">No block overview data found. The BEO profile may not be fully configured yet.</div>
         </Card>
       )}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">

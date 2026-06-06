@@ -1,6 +1,8 @@
 # Dependencies
 node_modules/
 .npm-cache/
+#screenshots
+screenshots/
 
 # Frontend build output and caches
 dist/

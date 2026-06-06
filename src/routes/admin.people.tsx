@@ -88,7 +88,7 @@ function People() {
         role: tenant.industry === "edu" ? "TEACHER" : "TRAINEE",
         designation: "Subject Teacher",
       language: "Tamil + English",
-      status: "invited",
+      status: "active",
       password: "",
     });
   };

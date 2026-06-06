@@ -118,6 +118,25 @@ function SandboxWorkspace({ scenario, onBack }: { scenario: Scenario; onBack: ()
       .catch((error) => console.warn("Sandbox context unavailable", error));
   }, [currentUser?.email, scenario, tenant.id, tenant.type]);
 
+  const [elapsed, setElapsed] = useState(0);
+  const [timedOut, setTimedOut] = useState(false);
+
+  const autoSavePractice = async (data: { output: string; scores: { label: string; value: number }[] }) => {
+    try {
+      await shiftoraApi.createPractice({
+        scenarioId: scenario.id,
+        scenarioTitle: scenario.title,
+        tenantId: tenant.id,
+        inputs: practiceInputs(values, context),
+        output: data.output,
+        scores: data.scores,
+      });
+      setSaved(true);
+    } catch {
+      // Silent — manual save button remains as fallback
+    }
+  };
+
   const mutation = useMutation({
     mutationFn: () =>
       shiftoraApi.runSandbox({
@@ -128,11 +147,31 @@ function SandboxWorkspace({ scenario, onBack }: { scenario: Scenario; onBack: ()
         scoreLabels: scenario.scoreLabels,
         inputs: values,
       }),
-    onSuccess: () => {
+    onSuccess: (data) => {
       setSaved(false);
       setSaveError("");
+      void autoSavePractice(data);
     },
   });
+
+  const isPending = mutation.isPending;
+  useEffect(() => {
+    if (!isPending) {
+      setElapsed(0);
+      return;
+    }
+    // New run started — clear any previous timeout banner
+    setTimedOut(false);
+    const interval = setInterval(() => setElapsed((s) => s + 1), 1000);
+    const timeout = setTimeout(() => {
+      setTimedOut(true);
+      mutation.reset();
+    }, 60_000);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [isPending]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const updateValue = (key: string, value: string) => {
     setValues((current) => ({ ...current, [key]: value }));
@@ -246,8 +285,28 @@ function SandboxWorkspace({ scenario, onBack }: { scenario: Scenario; onBack: ()
       <Card className="flex flex-col gap-3 min-h-[420px]">
         <SectionLabel>{t("aiResponse").replace("AI", tenant.aiName)}</SectionLabel>
         {mutation.isPending && (
-          <div className="flex items-center gap-2 text-[13px] text-text-muted">
-            <IconLoader2 className="size-4 animate-spin text-primary" /> {t("thinking")}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-[13px] text-text-muted">
+              <IconLoader2 className="size-4 animate-spin text-primary" />
+              {t("thinking")}
+              {elapsed > 0 && <span className="text-[11px]">({elapsed}s)</span>}
+            </div>
+            {elapsed >= 45 && (
+              <div className="text-[11px] text-text-subtle">
+                Complex scenarios can take up to 90 seconds. Hang tight…
+              </div>
+            )}
+          </div>
+        )}
+        {timedOut && (
+          <div
+            className="flex items-start gap-2 p-3 rounded-md"
+            style={{ background: "var(--erl)", color: "var(--er)" }}
+          >
+            <IconAlertTriangle className="size-4 mt-0.5 shrink-0" />
+            <div className="text-[12px]">
+              The request took too long and was cancelled. This can happen with complex prompts or when the AI service is under load. Try again or simplify your inputs.
+            </div>
           </div>
         )}
         {mutation.isError && (
@@ -289,7 +348,7 @@ function SandboxWorkspace({ scenario, onBack }: { scenario: Scenario; onBack: ()
                 onClick={savePracticeRun}
               >
                 <IconBookmark className="size-3.5" />{" "}
-                {saved ? t("savedToPracticeLog") : savingPractice ? t("saving") : t("saveToPracticeLog")}
+                {saved ? t("savedToPracticeLog") : savingPractice ? t("saving") : saveError ? "Retry save" : t("saveToPracticeLog")}
               </Btn>
               {saveError && (
                 <div className="text-[12px] text-[color:var(--er)]">
