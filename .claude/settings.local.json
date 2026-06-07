@@ -71,7 +71,15 @@
       "Bash(curl -s -X POST http://localhost:8081/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"beo@shiftora.edu.in\",\"password\":\"Shiftora@123\"}')",
       "Bash(node -e ' *)",
       "Bash(open /Users/venkat/workspace/Shiftora/Shiftora_Product_Walkthrough.pptx)",
-      "WebFetch(domain:skill-shift-os--sathishbalaj.replit.app)"
+      "WebFetch(domain:skill-shift-os--sathishbalaj.replit.app)",
+      "Bash(curl -s -X POST http://localhost:8090/api/auth/login -H \"Content-Type: application/json\" -d '{\"tenantId\":\"tn-59f2fc50-3292-4364-9be3-96e2aff83c79\",\"email\":\"demoteacher@dps.com\",\"password\":\"Shiftora@123\"}')",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\('token','ERROR:',d\\)[:80]\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(f'Q{i+1}: {q[\\\\\"prompt\\\\\"][:60]}'\\) for i,q in enumerate\\(d.get\\('questions',[]\\)\\)]\")",
+      "Bash(curl -s -X POST http://localhost:8090/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"demoteacher@dps.com\",\"password\":\"Shiftora@123\"}')",
+      "Bash(curl -s -X POST http://localhost:8090/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"demoteacher@dps.com\",\"password\":\"Shiftora@123\"}')",
+      "Bash(curl -s http://localhost:8090/api/tenants -H \"Authorization: Bearer $\\(curl -s -X POST http://localhost:8090/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"demoteacher@dps.com\",\"password\":\"Shiftora@123\"}')",
+      "Bash(curl -s http://localhost:8090/api/platform/settings -H \"Authorization: Bearer $\\(curl -s -X POST http://localhost:8090/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"demoteacher@dps.com\",\"password\":\"Shiftora@123\"}')",
+      "Bash(curl -s http://localhost:8090/learner/dashboard)"
     ],
     "additionalDirectories": [
       "/private/tmp"
