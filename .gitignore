@@ -19,6 +19,9 @@ coverage/
 target/
 backend/target/
 *.class
+*.pptx
+*_ppt.*
+*.png
 
 # Local env/secrets
 .env

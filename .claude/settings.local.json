@@ -63,7 +63,15 @@
       "Read(//Users/venkat/.npm/_npx/**)",
       "Bash(node screenshots/debug.mjs)",
       "Bash(curl -s -X POST http://localhost:8081/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"demoadmin@dps.com\",\"password\":\"Shiftora@123\"}')",
-      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('role:', d['user']['role'], '| tenant:', d['user'].get\\('tenantId',''\\)[:20]\\)\")"
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('role:', d['user']['role'], '| tenant:', d['user'].get\\('tenantId',''\\)[:20]\\)\")",
+      "Bash(node screenshots/capture_all.mjs)",
+      "Bash(node build_shiftora_ppt.js)",
+      "Bash(sed -i '' 's/require\\(\"pptxgenjs\"\\)/require\\(\"pptxgenjs\"\\)/' build_shiftora_ppt.cjs)",
+      "Bash(node build_shiftora_ppt.cjs)",
+      "Bash(curl -s -X POST http://localhost:8081/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"beo@shiftora.edu.in\",\"password\":\"Shiftora@123\"}')",
+      "Bash(node -e ' *)",
+      "Bash(open /Users/venkat/workspace/Shiftora/Shiftora_Product_Walkthrough.pptx)",
+      "WebFetch(domain:skill-shift-os--sathishbalaj.replit.app)"
     ],
     "additionalDirectories": [
       "/private/tmp"

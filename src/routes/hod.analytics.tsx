@@ -9,6 +9,16 @@ function Analytics() {
   const tenant = useActiveTenant();
   const dept = tenant.subdivisions[0];
   const weekly = ["W1","W2","W3","W4","W5","W6","W7","W8"].map((w, i) => ({ w, runs: 8 + i * 4 + (i % 3) * 2 }));
+
+  if (!dept) {
+    return (
+      <div>
+        <PageHeader title="Department analytics" subtitle="Usage trends and scenario mix" />
+        <div className="text-[13px] text-text-muted mt-4">No department configured yet. Ask your admin to set up a department under School config.</div>
+      </div>
+    );
+  }
+
   const dist = [
     { k: "Lesson / draft", v: 38 },
     { k: "Feedback", v: 24 },

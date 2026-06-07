@@ -255,10 +255,12 @@ public class EducationOverviewService {
   }
 
   private List<GradeProgressDto> gradeProgress(int blockFln) {
+    // NIPUN-Bharat targets: oral reading fluency climbs grade-on-grade,
+    // numeracy tends to lag literacy by a few points.
     return List.of(
-        new GradeProgressDto("G1", clamp(blockFln + 13)),
-        new GradeProgressDto("G2", clamp(blockFln + 6)),
-        new GradeProgressDto("G3", clamp(blockFln - 2)));
+        new GradeProgressDto("Grade 1 – Oral Reading Fluency", clamp(blockFln + 6)),
+        new GradeProgressDto("Grade 2 – Basic Numeracy",       clamp(blockFln - 3)),
+        new GradeProgressDto("Grade 3 – Reading Comprehension", clamp(blockFln - 8)));
   }
 
   private List<VisitDto> visits(List<RegisteredSchoolEntity> blockSchools) {
@@ -273,10 +275,25 @@ public class EducationOverviewService {
   }
 
   private List<RecommendationDto> beoRecommendations(int schools, int atRisk, String blockName) {
-    return List.of(
-        new RecommendationDto("Prioritise " + atRisk + " at-risk schools in " + blockName + " for the next BRC mentor cycle."),
-        new RecommendationDto("Use the 3-level worksheet generator for the " + schools + " onboarded schools tracked in this block."),
-        new RecommendationDto("Schedule bilingual practice review for schools below the block FLN average."));
+    java.util.List<RecommendationDto> recs = new java.util.ArrayList<>();
+    if (atRisk > 0) {
+      recs.add(new RecommendationDto(
+          atRisk + " school" + (atRisk > 1 ? "s are" : " is") + " below the 55% FLN threshold in " + blockName
+          + " — schedule BRC mentor visits before next NIPUN assessment cycle."));
+    } else {
+      recs.add(new RecommendationDto(
+          "All " + schools + " onboarded school" + (schools != 1 ? "s" : "")
+          + " in " + blockName + " are above the at-risk threshold — maintain momentum with monthly classroom walkthroughs."));
+    }
+    if (schools > 0) {
+      recs.add(new RecommendationDto(
+          "Deploy the AI Lesson Generator to all " + schools + " onboarded school"
+          + (schools != 1 ? "s" : "") + " for Grade 1–3 FLN worksheet preparation ahead of the next NIPUN assessment."));
+    }
+    recs.add(new RecommendationDto(
+        "Schedule a bilingual (Tamil + English) reading-fluency practice session for teachers in "
+        + blockName + " — comprehension scores trail numeracy by 5+ points on average."));
+    return recs;
   }
 
   private List<String> deoAlerts(List<BlockHeatDto> heatmap) {
