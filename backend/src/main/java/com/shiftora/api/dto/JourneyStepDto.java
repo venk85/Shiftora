@@ -6,5 +6,6 @@ public record JourneyStepDto(
     String path,
     String status,
     int progress,
-    Integer score
+    Integer score,
+    String lockReason
 ) {}

@@ -189,7 +189,11 @@ function LearnerDashboard() {
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
               {journey.steps.map((step, i) => (
                 <div key={step.key} className="flex items-center gap-1.5 shrink-0">
-                  <button type="button" onClick={() => nav({ to: step.path as never })}>
+                  <button type="button"
+                    onClick={() => step.status !== "locked" && nav({ to: step.path as never })}
+                    title={step.lockReason ?? undefined}
+                    disabled={step.status === "locked"}
+                  >
                     <span
                       className="px-3 py-2 rounded-md border text-[11.5px] font-semibold flex items-center gap-1.5 transition-all"
                       style={{
@@ -211,9 +215,13 @@ function LearnerDashboard() {
                             : step.status === "done"
                               ? "var(--okb)"
                               : "var(--bd)",
+                        opacity: step.status === "locked" ? 0.55 : 1,
+                        cursor: step.status === "locked" ? "default" : "pointer",
                       }}
                     >
-                      {step.status === "done" && <IconCheck className="size-3" />} {step.label}
+                      {step.status === "done" && <IconCheck className="size-3" />}
+                      {step.status === "locked" && <IconLock className="size-3" />}
+                      {step.label}
                     </span>
                   </button>
                   {i < journey.steps.length - 1 && (

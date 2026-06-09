@@ -154,9 +154,10 @@ export type Journey = {
     key: string;
     label: string;
     path: string;
-    status: "todo" | "active" | "done" | string;
+    status: "todo" | "active" | "done" | "locked" | string;
     progress: number;
     score: number | null;
+    lockReason?: string | null;
   }[];
   modules: { title: string; progress: number; status: string }[];
   metrics: { readiness: number; practiceRuns: number; confidence: string; completedSteps: number };
@@ -167,16 +168,36 @@ export type LearningUnit = {
   id: string;
   moduleId: string;
   title: string;
-  type: "reading" | "activity" | "quiz" | string;
+  type: "reading" | "video" | "activity" | "quiz" | "external" | string;
   estimatedMinutes: number;
   sortOrder: number;
-  content: Record<string, unknown>;
+  content: {
+    summary?: string;
+    body?: string;
+    videoUrl?: string;
+    activity?: string;
+    question?: string;
+    answer?: string;
+    externalResources?: { title: string; url: string; source?: string }[];
+    [key: string]: unknown;
+  };
   status: "not_started" | "in_progress" | "completed" | string;
+};
+
+export type LearningModuleTargeting = {
+  schoolName?: string;
+  grade?: string | string[];
+  division?: string;
+  subject?: string;
+  responsibility?: string;
+  board?: string | string[];
+  minReadiness?: number;
+  maxReadiness?: number;
 };
 
 export type LearningModule = {
   id: string;
-  tenantId: string;
+  tenantId: string | null;
   title: string;
   description: string;
   level: string;
@@ -184,10 +205,22 @@ export type LearningModule = {
   estimatedMinutes: number;
   status: string;
   sortOrder: number;
-  targeting: Record<string, unknown>;
+  targeting: LearningModuleTargeting;
   progress: number;
   locked: boolean;
   units: LearningUnit[];
+  mandatory: boolean;
+  isPlatform: boolean;
+};
+
+export type TenantModuleAdoption = {
+  id: string;
+  tenantId: string;
+  moduleId: string;
+  mandatory: boolean;
+  sortOrder: number;
+  targeting: LearningModuleTargeting;
+  adoptedAt: number;
 };
 
 export type LearningPath = {
@@ -425,6 +458,40 @@ export const shiftoraApi = {
     ),
   adminLearningModules: (tenantId: string) =>
     request<LearningModule[]>(`/admin/learning-modules?tenantId=${encodeURIComponent(tenantId)}`),
+  adminCreateModule: (tenantId: string, body: Partial<LearningModule>) =>
+    request<LearningModule>(`/admin/learning-modules?tenantId=${encodeURIComponent(tenantId)}`, { method: "POST", body: JSON.stringify(body) }),
+  adminUpdateModule: (tenantId: string, moduleId: string, body: Partial<LearningModule>) =>
+    request<LearningModule>(`/admin/learning-modules/${encodeURIComponent(moduleId)}?tenantId=${encodeURIComponent(tenantId)}`, { method: "PUT", body: JSON.stringify(body) }),
+  adminDeleteModule: (tenantId: string, moduleId: string) =>
+    request<void>(`/admin/learning-modules/${encodeURIComponent(moduleId)}?tenantId=${encodeURIComponent(tenantId)}`, { method: "DELETE" }),
+  adminAddUnit: (moduleId: string, body: Partial<LearningUnit>) =>
+    request<LearningUnit>(`/admin/learning-modules/${encodeURIComponent(moduleId)}/units`, { method: "POST", body: JSON.stringify(body) }),
+  adminUpdateUnit: (unitId: string, body: Partial<LearningUnit>) =>
+    request<LearningUnit>(`/admin/learning-units/${encodeURIComponent(unitId)}`, { method: "PUT", body: JSON.stringify(body) }),
+  adminDeleteUnit: (unitId: string) =>
+    request<void>(`/admin/learning-units/${encodeURIComponent(unitId)}`, { method: "DELETE" }),
+  adminPlatformCatalog: (tenantId: string) =>
+    request<LearningModule[]>(`/admin/platform-catalog?tenantId=${encodeURIComponent(tenantId)}`),
+  adminAdoptModule: (tenantId: string, body: { moduleId: string; mandatory: boolean; sortOrder: number; targeting: LearningModuleTargeting }) =>
+    request<TenantModuleAdoption>(`/admin/module-adoptions?tenantId=${encodeURIComponent(tenantId)}`, { method: "POST", body: JSON.stringify(body) }),
+  adminUpdateAdoption: (tenantId: string, moduleId: string, body: { mandatory: boolean; sortOrder: number; targeting: LearningModuleTargeting }) =>
+    request<TenantModuleAdoption>(`/admin/module-adoptions/${encodeURIComponent(moduleId)}?tenantId=${encodeURIComponent(tenantId)}`, { method: "PUT", body: JSON.stringify(body) }),
+  adminRemoveAdoption: (tenantId: string, moduleId: string) =>
+    request<void>(`/admin/module-adoptions/${encodeURIComponent(moduleId)}?tenantId=${encodeURIComponent(tenantId)}`, { method: "DELETE" }),
+  platformContentModules: () =>
+    request<LearningModule[]>(`/platform/content/modules`),
+  platformCreateModule: (body: Partial<LearningModule>) =>
+    request<LearningModule>(`/platform/content/modules`, { method: "POST", body: JSON.stringify(body) }),
+  platformUpdateModule: (moduleId: string, body: Partial<LearningModule>) =>
+    request<LearningModule>(`/platform/content/modules/${encodeURIComponent(moduleId)}`, { method: "PUT", body: JSON.stringify(body) }),
+  platformDeleteModule: (moduleId: string) =>
+    request<void>(`/platform/content/modules/${encodeURIComponent(moduleId)}`, { method: "DELETE" }),
+  platformAddUnit: (moduleId: string, body: Partial<LearningUnit>) =>
+    request<LearningUnit>(`/platform/content/modules/${encodeURIComponent(moduleId)}/units`, { method: "POST", body: JSON.stringify(body) }),
+  platformUpdateUnit: (unitId: string, body: Partial<LearningUnit>) =>
+    request<LearningUnit>(`/platform/content/units/${encodeURIComponent(unitId)}`, { method: "PUT", body: JSON.stringify(body) }),
+  platformDeleteUnit: (unitId: string) =>
+    request<void>(`/platform/content/units/${encodeURIComponent(unitId)}`, { method: "DELETE" }),
   workshopSession: (tenantId: string) =>
     request<WorkshopSession>(`/users/me/workshop?tenantId=${encodeURIComponent(tenantId)}`),
   knowledgeCheck: (tenantId: string, email: string, assignmentId?: string) =>

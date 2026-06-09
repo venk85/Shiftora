@@ -57,10 +57,12 @@ const NAV: Record<RoleKey, NavItem[]> = {
     { to: "/platform/tenants", label: "Organizations", icon: IconBuilding },
     { to: "/platform/create", label: "Create organization", icon: IconWand },
     { to: "/platform/officers", label: "Education officers", icon: IconMap2 },
+    { to: "/platform/content", label: "Content library", icon: IconBook },
   ],
   admin: [
     { to: "/admin/overview", label: "Overview", icon: IconLayoutGrid },
     { to: "/admin/people", label: "Teachers", icon: IconUsers },
+    { to: "/admin/content", label: "Content library", icon: IconBook },
     { to: "/admin/readiness", label: "Readiness checks", icon: IconClipboardCheck },
     { to: "/admin/completion", label: "Workshop & certificates", icon: IconShieldCheck },
     { to: "/admin/config", label: "School config", icon: IconSettings },

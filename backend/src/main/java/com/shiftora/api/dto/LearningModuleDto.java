@@ -16,4 +16,6 @@ public record LearningModuleDto(
     Map<String, Object> targeting,
     int progress,
     boolean locked,
-    List<LearningUnitDto> units) {}
+    List<LearningUnitDto> units,
+    boolean mandatory,
+    boolean isPlatform) {}

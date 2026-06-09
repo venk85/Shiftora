@@ -16,6 +16,8 @@ import com.shiftora.api.repository.LearningModuleRepository;
 import com.shiftora.api.repository.LearningProgressRepository;
 import com.shiftora.api.repository.LearningUnitRepository;
 import com.shiftora.api.repository.ReadinessAttemptRepository;
+import com.shiftora.api.repository.TenantModuleAdoptionRepository;
+import com.shiftora.api.repository.TenantRepository;
 import com.shiftora.api.repository.UserAssignmentRepository;
 import com.shiftora.api.service.LearningService;
 import java.util.List;
@@ -36,12 +38,14 @@ class LearningServiceTest {
   @Mock private LearningUnitRepository units;
   @Mock private LearningProgressRepository progress;
   @Mock private JourneyProgressRepository journeyProgress;
+  @Mock private TenantModuleAdoptionRepository adoptions;
+  @Mock private TenantRepository tenants;
 
   private LearningService service;
 
   @BeforeEach
   void setUp() {
-    service = new LearningService(users, assignments, attempts, modules, units, progress, journeyProgress);
+    service = new LearningService(users, assignments, attempts, modules, units, progress, journeyProgress, adoptions, tenants);
   }
 
   @Test
@@ -51,6 +55,8 @@ class LearningServiceTest {
         .thenReturn(List.of(assignment()));
     when(attempts.findFirstByUserIdAndTenantIdAndAssignmentIdIsNullOrderByCreatedAtDesc("u-demo-teacher", "tn-demo-school"))
         .thenReturn(Optional.empty());
+    when(adoptions.findByTenantIdOrderBySortOrderAsc("tn-demo-school")).thenReturn(List.of());
+    when(tenants.findById("tn-demo-school")).thenReturn(Optional.empty());
     when(modules.findByTenantIdAndStatusOrderBySortOrderAsc("tn-demo-school", "published"))
         .thenReturn(List.of(module("lm-match", Map.of("grade", "Grade 3", "subject", "Mathematics")), module("lm-skip", Map.of("subject", "Science"))));
     when(units.findByModuleIdInOrderByModuleIdAscSortOrderAsc(List.of("lm-match")))
@@ -72,6 +78,8 @@ class LearningServiceTest {
     when(assignments.findByUserIdAndActiveTrueOrderByPrimaryAssignmentDescGradeAscDivisionAscSubjectAsc("u-demo-teacher"))
         .thenReturn(List.of(assignment()));
     when(modules.findById("lm-match")).thenReturn(Optional.of(module("lm-match", Map.of("subject", "Mathematics"))));
+    when(adoptions.findByTenantIdOrderBySortOrderAsc("tn-demo-school")).thenReturn(List.of());
+    when(tenants.findById("tn-demo-school")).thenReturn(Optional.empty());
     when(modules.findByTenantIdAndStatusOrderBySortOrderAsc("tn-demo-school", "published"))
         .thenReturn(List.of(module("lm-match", Map.of("subject", "Mathematics"))));
     when(units.findById("lu-1")).thenReturn(Optional.of(unit("lu-1", "lm-match")));

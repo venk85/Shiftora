@@ -79,7 +79,19 @@
       "Bash(curl -s -X POST http://localhost:8090/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"demoteacher@dps.com\",\"password\":\"Shiftora@123\"}')",
       "Bash(curl -s http://localhost:8090/api/tenants -H \"Authorization: Bearer $\\(curl -s -X POST http://localhost:8090/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"demoteacher@dps.com\",\"password\":\"Shiftora@123\"}')",
       "Bash(curl -s http://localhost:8090/api/platform/settings -H \"Authorization: Bearer $\\(curl -s -X POST http://localhost:8090/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"demoteacher@dps.com\",\"password\":\"Shiftora@123\"}')",
-      "Bash(curl -s http://localhost:8090/learner/dashboard)"
+      "Bash(curl -s http://localhost:8090/learner/dashboard)",
+      "WebFetch(domain:www.jove.com)",
+      "WebSearch",
+      "Bash(curl -s \"http://localhost:8090/api/users/me/learning-path?tenantId=tn-59f2fc50-3292-4364-9be3-96e2aff83c79&email=demoteacher%40dps.com\" -H \"Authorization: Bearer $\\(curl -s -X POST http://localhost:8090/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"demoteacher@dps.com\",\"password\":\"Shiftora@123\"}')",
+      "Bash(curl -s -X POST http://localhost:8090/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"demoadmin@dps.com\",\"password\":\"Shiftora@123\"}')",
+      "Bash(docker volume *)",
+      "Bash(docker stop *)",
+      "Bash(curl -s http://localhost:8090/api/health)",
+      "Bash(curl -s -X POST http://localhost:8090/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"demoteacher@dps.com\",\"password\":\"Shiftora@2025\"}')",
+      "Bash(grep -n \"password_hash\\\\|2a\\\\$12\" /Users/venkat/workspace/Shiftora/deploy/seed_azure_demo.sql)",
+      "Bash(grep \"password_hash\\\\|2a\\\\$\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'modules: {len\\(d[\\\\\"modules\\\\\"]\\)}'\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'modules: {len\\(d[\\\\\"modules\\\\\"]\\)} | readiness: {d[\\\\\"readinessScore\\\\\"]}'\\)\")"
     ],
     "additionalDirectories": [
       "/private/tmp"

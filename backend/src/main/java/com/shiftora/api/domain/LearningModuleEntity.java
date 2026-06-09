@@ -21,6 +21,8 @@ public class LearningModuleEntity {
   private int estimatedMinutes;
   private String status;
   private int sortOrder;
+  private boolean mandatory;
+  private boolean isPlatform;
   private long createdAt;
   private long updatedAt;
 
@@ -52,4 +54,8 @@ public class LearningModuleEntity {
   public void setUpdatedAt(long updatedAt) { this.updatedAt = updatedAt; }
   public Map<String, Object> getTargeting() { return targeting; }
   public void setTargeting(Map<String, Object> targeting) { this.targeting = targeting; }
+  public boolean isMandatory() { return mandatory; }
+  public void setMandatory(boolean mandatory) { this.mandatory = mandatory; }
+  public boolean isIsPlatform() { return isPlatform; }
+  public void setIsPlatform(boolean isPlatform) { this.isPlatform = isPlatform; }
 }

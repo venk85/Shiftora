@@ -26,6 +26,7 @@ public class ApiAuthFilter extends OncePerRequestFilter {
     String path = request.getRequestURI();
     if (!path.startsWith("/api/")
         || path.equals("/api/auth/login")
+        || path.equals("/api/health")
         || "OPTIONS".equalsIgnoreCase(request.getMethod())) {
       filterChain.doFilter(request, response);
       return;

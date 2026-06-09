@@ -39,12 +39,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class JourneyService {
   private static final List<JourneyStepDto> DEFAULT_STEPS = List.of(
-      new JourneyStepDto("assessment", "Readiness check", "/learner/assessment", "todo", 0, null),
-      new JourneyStepDto("learning", "Learning path", "/learner/learning", "todo", 0, null),
-      new JourneyStepDto("workshop", "Live workshop", "/learner/workshop", "todo", 0, null),
-      new JourneyStepDto("sandbox", "AI Sandbox", "/learner/sandbox", "todo", 0, null),
-      new JourneyStepDto("practice", "Practice log", "/learner/practice", "todo", 0, null),
-      new JourneyStepDto("check", "Knowledge check", "/learner/check", "todo", 0, null));
+      new JourneyStepDto("assessment", "Readiness check", "/learner/assessment", "todo", 0, null, null),
+      new JourneyStepDto("learning", "Learning path", "/learner/learning", "todo", 0, null, null),
+      new JourneyStepDto("workshop", "Live workshop", "/learner/workshop", "todo", 0, null, null),
+      new JourneyStepDto("sandbox", "AI Sandbox", "/learner/sandbox", "todo", 0, null, null),
+      new JourneyStepDto("practice", "Practice log", "/learner/practice", "todo", 0, null, null),
+      new JourneyStepDto("check", "Knowledge check", "/learner/check", "todo", 0, null, null));
 
   private final AppUserRepository users;
   private final UserAssignmentRepository assignments;
@@ -294,13 +294,18 @@ public class JourneyService {
     Map<String, JourneyProgressEntity> byStep = new LinkedHashMap<>();
     progress.findByUserIdAndTenantIdAndAssignmentIdIsNullOrderByStepKey(user.getId(), tenantId)
         .forEach(item -> byStep.put(item.getStepKey(), item));
+    boolean learningDone = progress.findByUserIdAndTenantIdAndStepKey(user.getId(), tenantId, "learning")
+        .stream().anyMatch(p -> "done".equals(p.getStatus()));
     return DEFAULT_STEPS.stream().map(step -> {
       if ("learning".equals(step.key())) {
         JourneyStepDto aggregated = aggregateLearningStep(user, tenantId, userAssignments);
         if (aggregated != null) return aggregated;
       }
+      if ("workshop".equals(step.key()) && !learningDone) {
+        return new JourneyStepDto(step.key(), step.label(), step.path(), "locked", 0, null, "Complete your learning path to unlock the workshop");
+      }
       JourneyProgressEntity item = byStep.get(step.key());
-      return item == null ? step : new JourneyStepDto(step.key(), step.label(), step.path(), item.getStatus(), item.getProgress(), item.getScore());
+      return item == null ? step : new JourneyStepDto(step.key(), step.label(), step.path(), item.getStatus(), item.getProgress(), item.getScore(), null);
     }).toList();
   }
 
@@ -313,7 +318,7 @@ public class JourneyService {
     int assignmentCount = Math.max(1, userAssignments.size());
     int value = Math.min(100, Math.round(rows.stream().mapToInt(JourneyProgressEntity::getProgress).sum() / (float) assignmentCount));
     String status = value >= 100 ? "done" : value > 0 ? "active" : "todo";
-    return new JourneyStepDto("learning", "Learning path", "/learner/learning", status, value, null);
+    return new JourneyStepDto("learning", "Learning path", "/learner/learning", status, value, null, null);
   }
 
   private JourneyActionDto nextAction(List<JourneyStepDto> steps) {

@@ -7,7 +7,9 @@ import {
   IconBook,
   IconCheck,
   IconClock,
+  IconExternalLink,
   IconLanguage,
+  IconLock,
   IconPlayerPlay,
   IconSchool,
   IconTarget,
@@ -98,6 +100,19 @@ function Learning() {
           )
         }
       />
+
+      {/* Completion banner */}
+      {path && path.totalModules > 0 && path.completedModules === path.totalModules && (
+        <Card className="mb-4" style={{ borderColor: "var(--okb)", background: "var(--okl)" }}>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="font-semibold text-[13px]" style={{ color: "var(--ok)" }}>Learning path complete</div>
+              <div className="text-[12px] text-text-muted mt-0.5">Your workshop session is now unlocked.</div>
+            </div>
+            <Btn as="link" href="/learner/workshop" size="sm">Go to Workshop</Btn>
+          </div>
+        </Card>
+      )}
 
       {error && (
         <Card className="mb-4">
@@ -241,7 +256,15 @@ function ModuleCard({
             {module.progress === 100 ? <IconCheck className="size-4" /> : module.sortOrder}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="font-semibold text-[13px]">{module.title}</div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="font-semibold text-[13px]">{module.title}</span>
+              {module.mandatory && (
+                <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-medium"
+                  style={{ background: "var(--erl)", color: "var(--er)" }}>
+                  <IconLock className="size-2.5" /> Required
+                </span>
+              )}
+            </div>
             <p className="text-[12px] text-text-muted mt-0.5 mb-2">{module.description}</p>
             <div className="flex items-center justify-between text-[11px] text-text-muted mb-1">
               <span><IconSchool className="inline size-3 mr-1" />{module.level}</span>
@@ -255,33 +278,75 @@ function ModuleCard({
   );
 }
 
+function toEmbedUrl(url: string): string {
+  const m = url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  return m ? `https://www.youtube.com/embed/${m[1]}` : url;
+}
+
 function LearningUnitView({ unit }: { unit: LearningUnit }) {
   const { t } = useI18n();
   const summary = String(unit.content.summary ?? "");
   const body = String(unit.content.body ?? "");
+  const videoUrl = String(unit.content.videoUrl ?? "");
   const activity = String(unit.content.activity ?? "");
   const question = String(unit.content.question ?? "");
   const answer = String(unit.content.answer ?? "");
+  const resources = (unit.content.externalResources ?? []) as { title: string; url: string; source?: string }[];
+
   return (
     <div className="rounded-lg border border-border bg-surface-2 p-4">
       <div className="flex items-center gap-2 mb-2">
-        <Chip tone={unit.type === "quiz" ? "violet" : unit.type === "activity" ? "gold" : "blue"}>
+        <Chip tone={unit.type === "quiz" ? "violet" : unit.type === "activity" ? "gold" : unit.type === "video" ? "blue" : unit.type === "external" ? "teal" : "blue"}>
           {unit.type}
         </Chip>
         <span className="text-[11px] text-text-muted">{unit.estimatedMinutes} {t("minutes")}</span>
       </div>
       <h3 className="text-[16px] font-semibold mb-2">{unit.title}</h3>
       {summary && <p className="text-[13px] text-text mb-3">{summary}</p>}
-      {body && <p className="text-[12.5px] leading-6 text-text-muted mb-3">{body}</p>}
+
+      {/* Video embed */}
+      {unit.type === "video" && videoUrl && (
+        <div className="rounded-lg overflow-hidden mb-3" style={{ aspectRatio: "16/9" }}>
+          <iframe
+            src={toEmbedUrl(videoUrl)}
+            className="w-full h-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            title={unit.title}
+          />
+        </div>
+      )}
+
+      {body && <p className="text-[12.5px] leading-6 text-text-muted mb-3 whitespace-pre-line">{body}</p>}
       {activity && (
         <div className="rounded-md border border-[color:var(--gb)] bg-[color:var(--gl)] p-3 text-[12.5px] text-[color:var(--gt)]">
-          <span className="font-semibold">{t("activity")}: </span>{activity}
+          <span className="font-semibold">{t("activity")}: </span>
+          <span className="whitespace-pre-line">{activity}</span>
         </div>
       )}
       {question && (
         <div className="rounded-md border border-[color:var(--vib)] bg-[color:var(--vil)] p-3 text-[12.5px] text-[color:var(--vi)]">
           <div className="font-semibold mb-1">{question}</div>
           {answer && <div>{t("expectedAnswer")}: {answer}</div>}
+        </div>
+      )}
+
+      {/* External resources */}
+      {resources.length > 0 && (
+        <div className="mt-4 rounded-md border border-border p-3">
+          <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wide mb-2">Self-study resources</div>
+          <div className="space-y-1.5">
+            {resources.map((r, i) => (
+              <a key={i} href={r.url} target="_blank" rel="noreferrer"
+                className="flex items-center gap-2 text-[12.5px] text-blue-600 hover:underline">
+                <IconExternalLink className="size-3.5 shrink-0" />
+                {r.title}
+                {r.source && (
+                  <Chip tone="muted" className="text-[10px]">{r.source}</Chip>
+                )}
+              </a>
+            ))}
+          </div>
         </div>
       )}
     </div>
